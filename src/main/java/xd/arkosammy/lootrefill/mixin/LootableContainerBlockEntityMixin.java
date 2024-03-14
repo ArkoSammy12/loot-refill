@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import xd.arkosammy.lootrefill.LootRefill;
 import xd.arkosammy.lootrefill.util.ducks.LootableContainerBlockEntityAccessor;
+import xd.arkosammy.lootrefill.util.ducks.VieweableContainer;
 
 @Mixin(LootableContainerBlockEntity.class)
 public abstract class LootableContainerBlockEntityMixin extends LockableContainerBlockEntity implements LootableInventory, LootableContainerBlockEntityAccessor {
@@ -60,6 +61,8 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
         if(!isEmpty && world.getGameRules().getBoolean(LootRefill.REFILL_ONLY_WHEN_EMPTY)) {
             shouldRefill = false;
         } else if (maxRefills >= 0 && this.refillCount > maxRefills) {
+            shouldRefill = false;
+        } else if (((Object) this instanceof VieweableContainer vieweableContainer) && vieweableContainer.lootrefill$isBeingViewed()) {
             shouldRefill = false;
         }
 

@@ -4,7 +4,10 @@
 	"compatibilityLevel": "JAVA_17",
 	"mixins": [
 		"LootableInventoryMixin",
-		"LootableContainerBlockEntityMixin"
+		"LootableContainerBlockEntityMixin",
+		"BarrelBlockEntityMixin",
+		"ChestBlockEntityMixin",
+		"ShulkerBoxBlockEntityMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
