@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "lootrefill",
+	"version": "${version}",
+	"name": "Loot Refill",
+	"description": "A Minecraft Fabric server-side mod to automatically refill the contents of naturally generated loot containers.",
+	"authors": [
+		"ArkoSammy12"
+	],
+	"contact": {
+		"homepage": "https://github.com/ArkoSammy12",
+		"sources": "https://github.com/ArkoSammy12/loot-refill"
+	},
+	"license": "MIT",
+	"icon": "assets/lootrefill/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"xd.arkosammy.lootrefill.LootRefill"
+		]
+	},
+	"mixins": [
+		"lootrefill.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.15.7",
+		"minecraft": ">=1.20.4",
+		"java": ">=17",
+		"fabric-api": "*"
+	}
+}

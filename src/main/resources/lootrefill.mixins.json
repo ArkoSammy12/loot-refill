@@ -1,0 +1,12 @@
+{
+	"required": true,
+	"package": "xd.arkosammy.lootrefill.mixin",
+	"compatibilityLevel": "JAVA_17",
+	"mixins": [
+		"LootableInventoryMixin",
+		"LootableContainerBlockEntityMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}
