@@ -16,6 +16,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import xd.arkosammy.lootrefill.util.ducks.LootableContainerBlockEntityAccessor;
 
 @Mixin(LootableInventory.class)
@@ -26,7 +28,7 @@ public interface LootableInventoryMixin {
     @Shadow @Nullable World getWorld();
 
     @ModifyReturnValue(method = "readLootTable", at = @At("RETURN"))
-    private boolean readCustomDataToNbt(boolean original, @Local(argsOnly = true) NbtCompound nbt){
+    private boolean readCustomDataFromNbt(boolean original, @Local(argsOnly = true) NbtCompound nbt){
         if(original && ((Object) this instanceof LootableContainerBlockEntity lootableContainerBlockEntity)) {
             ((LootableContainerBlockEntityAccessor) lootableContainerBlockEntity).lootrefill$readDataFromNbt(nbt);
         }
@@ -46,7 +48,7 @@ public interface LootableInventoryMixin {
         return this.shouldRefillContainer(player) ? original : null;
     }
 
-    // Preserve loot table id when generating loot
+    // Preserve loot table id when generating loot if this is an instance of LootableContainerBlockEntity
     @WrapOperation(method = "generateLoot", at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/LootableInventory;setLootTableId(Lnet/minecraft/util/Identifier;)V"))
     private void keepLootTableIdIfNeeded(LootableInventory instance, @Nullable Identifier identifier, Operation<Void> original){
         if(!(this instanceof LootableContainerBlockEntity) || identifier != null) {
@@ -54,9 +56,17 @@ public interface LootableInventoryMixin {
         }
     }
 
+    @Inject(method = "generateLoot", at = @At(value = "INVOKE", target = "Lnet/minecraft/loot/LootTable;supplyInventory(Lnet/minecraft/inventory/Inventory;Lnet/minecraft/loot/context/LootContextParameterSet;J)V"))
+    private void onLootGenerated(PlayerEntity player, CallbackInfo ci) {
+        if(this instanceof LootableContainerBlockEntity lootableContainerBlockEntity) {
+            ((LootableContainerBlockEntityAccessor)lootableContainerBlockEntity).lootrefill$onLootRefilled();
+        }
+    }
+
     @Unique
     private boolean shouldRefillContainer(PlayerEntity player){
         World world = this.getWorld();
+        // If the loot table id is null then this container does not correspond to a container with naturally generated loot
         if(this.getLootTableId() == null || world == null) {
             return false;
         }
