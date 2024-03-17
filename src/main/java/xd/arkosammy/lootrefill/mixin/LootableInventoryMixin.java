@@ -12,6 +12,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
+import org.spongepowered.asm.mixin.Debug;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -20,6 +21,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import xd.arkosammy.lootrefill.util.ducks.LootableContainerBlockEntityAccessor;
 
+// TODO: Remove exports
+@Debug(export = true)
 @Mixin(LootableInventory.class)
 public interface LootableInventoryMixin {
 
@@ -29,7 +32,7 @@ public interface LootableInventoryMixin {
 
     @ModifyReturnValue(method = "readLootTable", at = @At("RETURN"))
     private boolean readCustomDataFromNbt(boolean original, @Local(argsOnly = true) NbtCompound nbt){
-        if(original && ((Object) this instanceof LootableContainerBlockEntity lootableContainerBlockEntity)) {
+        if(original && this instanceof LootableContainerBlockEntity lootableContainerBlockEntity) {
             ((LootableContainerBlockEntityAccessor) lootableContainerBlockEntity).lootrefill$readDataFromNbt(nbt);
         }
         return original;
@@ -37,7 +40,7 @@ public interface LootableInventoryMixin {
 
     @ModifyReturnValue(method = "writeLootTable", at = @At("RETURN"))
     private boolean writeCustomDataToNbt(boolean original, @Local(argsOnly = true) NbtCompound nbt) {
-        if(original && ((Object) this instanceof LootableContainerBlockEntity lootableContainerBlockEntity)) {
+        if(original && this instanceof LootableContainerBlockEntity lootableContainerBlockEntity) {
             ((LootableContainerBlockEntityAccessor) lootableContainerBlockEntity).lootrefill$writeDataToNbt(nbt);
         }
         return original;
@@ -59,7 +62,7 @@ public interface LootableInventoryMixin {
     @Inject(method = "generateLoot", at = @At(value = "INVOKE", target = "Lnet/minecraft/loot/LootTable;supplyInventory(Lnet/minecraft/inventory/Inventory;Lnet/minecraft/loot/context/LootContextParameterSet;J)V"))
     private void onLootGenerated(PlayerEntity player, CallbackInfo ci) {
         if(this instanceof LootableContainerBlockEntity lootableContainerBlockEntity) {
-            ((LootableContainerBlockEntityAccessor)lootableContainerBlockEntity).lootrefill$onLootRefilled();
+            ((LootableContainerBlockEntityAccessor)lootableContainerBlockEntity).lootrefill$onLootRefilled(this.getWorld());
         }
     }
 

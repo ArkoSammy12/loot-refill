@@ -11,6 +11,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import org.spongepowered.asm.mixin.Debug;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -21,18 +22,21 @@ import xd.arkosammy.lootrefill.LootRefill;
 import xd.arkosammy.lootrefill.util.ducks.LootableContainerBlockEntityAccessor;
 import xd.arkosammy.lootrefill.util.ducks.VieweableContainer;
 
+// TODO: Remove exports
+@Debug(export = true)
 @Mixin(LootableContainerBlockEntity.class)
 public abstract class LootableContainerBlockEntityMixin extends LockableContainerBlockEntity implements LootableInventory, LootableContainerBlockEntityAccessor {
 
     @Shadow public abstract boolean isEmpty();
 
+    // getItemStacks
     @Shadow protected abstract DefaultedList<ItemStack> method_11282();
 
     @Unique
     private long lastRefilledTime;
 
     @Unique
-    private long refillCount = 0;
+    private long refillCount;
 
     @Unique
     private boolean looted = false;
@@ -85,15 +89,15 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
         if (maxRefills >= 0 && this.refillCount >= maxRefills) {
             return false;
         }
-        if (((Object) this instanceof VieweableContainer vieweableContainer) && vieweableContainer.lootrefill$isBeingViewed()) {
+        if (this instanceof VieweableContainer vieweableContainer && vieweableContainer.lootrefill$isBeingViewed()) {
             return false;
         }
-        return System.currentTimeMillis() - lastRefilledTime > world.getGameRules().getInt(LootRefill.TIME_UNTIL_REFILL) * 1000L;
+        return LootRefill.ticksToSeconds(world.getTime()) - lastRefilledTime > world.getGameRules().getInt(LootRefill.SECONDS_UNTIL_REFILL);
     }
 
     @Override
-    public void lootrefill$onLootRefilled() {
-        this.lastRefilledTime = System.currentTimeMillis();
+    public void lootrefill$onLootRefilled(World world) {
+        this.lastRefilledTime = LootRefill.ticksToSeconds(world.getTime());
         this.refillCount++;
         this.looted = false;
     }

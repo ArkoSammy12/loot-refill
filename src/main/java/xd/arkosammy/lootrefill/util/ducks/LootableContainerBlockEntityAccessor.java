@@ -12,6 +12,6 @@ public interface LootableContainerBlockEntityAccessor {
 
     void lootrefill$readDataFromNbt(NbtCompound nbtCompound);
 
-    void lootrefill$onLootRefilled();
+    void lootrefill$onLootRefilled(World world);
 
 }
