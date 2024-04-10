@@ -11,19 +11,17 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import org.spongepowered.asm.mixin.Debug;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import xd.arkosammy.lootrefill.LootRefill;
 import xd.arkosammy.lootrefill.util.ducks.LootableContainerBlockEntityAccessor;
 import xd.arkosammy.lootrefill.util.ducks.VieweableContainer;
 
-// TODO: Remove exports
-@Debug(export = true)
 @Mixin(LootableContainerBlockEntity.class)
 public abstract class LootableContainerBlockEntityMixin extends LockableContainerBlockEntity implements LootableInventory, LootableContainerBlockEntityAccessor {
 
@@ -45,14 +43,33 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
         super(blockEntityType, blockPos, blockState);
     }
 
-    @Inject(method = "removeStack(I)Lnet/minecraft/item/ItemStack;", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/entity/LootableContainerBlockEntity;generateLoot(Lnet/minecraft/entity/player/PlayerEntity;)V"))
-    private void setLootedOnStackRemoved(int slot, CallbackInfoReturnable<ItemStack> cir) {
-        this.looted = true;
+    @Inject(method = "setStack", at = @At("HEAD"))
+    private void onStackQuickMoved(int slot, ItemStack stack, CallbackInfo ci) {
+        if(stack.isEmpty()) {
+            this.onStackRemoved();
+        }
     }
 
-    @Inject(method = "removeStack(II)Lnet/minecraft/item/ItemStack;", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/entity/LootableContainerBlockEntity;generateLoot(Lnet/minecraft/entity/player/PlayerEntity;)V"))
-    private void setLootedOnStackRemoved(int slot, int amount, CallbackInfoReturnable<ItemStack> cir) {
-        this.looted = true;
+    @Inject(method = "removeStack(I)Lnet/minecraft/item/ItemStack;", at = @At(value = "RETURN"))
+    private void setLootedOnStackRemoved(int slot, CallbackInfoReturnable<ItemStack> cir) {
+        this.onStackRemoved();
+    }
+
+
+    @Inject(method = "removeStack(II)Lnet/minecraft/item/ItemStack;", at = @At(value = "RETURN"))
+    private void setLootedOnStackRemovedWithAmount(int slot, int amount, CallbackInfoReturnable<ItemStack> cir) {
+        this.onStackRemoved();
+    }
+
+    @Unique
+    private void onStackRemoved() {
+         World world = this.getWorld();
+        if(world == null) {
+            return;
+        }
+        boolean refillWhenEmpty = world.getGameRules().getBoolean(LootRefill.REFILL_ONLY_WHEN_EMPTY);
+        // Consider this container as looted if refillWhenEmpty is false or if the container is empty
+        this.looted = !refillWhenEmpty || this.isEmptyNoSideEffects();
     }
 
     @Override
@@ -77,10 +94,10 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
 
     @Override
     public boolean lootrefill$shouldRefillLoot(World world, PlayerEntity player) {
+        boolean isEmpty = this.isEmptyNoSideEffects();
         if(!this.looted) {
             return false;
         }
-        boolean isEmpty = this.method_11282().stream().allMatch(ItemStack::isEmpty);
         if(!isEmpty && world.getGameRules().getBoolean(LootRefill.REFILL_ONLY_WHEN_EMPTY)) {
             return false;
         }
@@ -92,7 +109,11 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
         if (this instanceof VieweableContainer vieweableContainer && vieweableContainer.lootrefill$isBeingViewed()) {
             return false;
         }
-        return LootRefill.ticksToSeconds(world.getTime()) - lastRefilledTime > world.getGameRules().getInt(LootRefill.SECONDS_UNTIL_REFILL);
+        boolean enoughTimePassed = LootRefill.ticksToSeconds(world.getTime()) - lastRefilledTime > world.getGameRules().getInt(LootRefill.SECONDS_UNTIL_REFILL);
+        if(!enoughTimePassed) {
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -100,6 +121,11 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
         this.lastRefilledTime = LootRefill.ticksToSeconds(world.getTime());
         this.refillCount++;
         this.looted = false;
+    }
+
+    @Unique
+    private boolean isEmptyNoSideEffects() {
+        return this.method_11282().stream().allMatch(ItemStack::isEmpty);
     }
 
 }
