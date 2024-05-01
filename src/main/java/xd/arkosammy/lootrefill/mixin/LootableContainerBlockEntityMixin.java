@@ -31,16 +31,25 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
     @Shadow protected abstract DefaultedList<ItemStack> method_11282();
 
     @Unique
-    private long lastRefilledTime;
+    private long refillCount;
 
     @Unique
-    private long refillCount;
+    private long lastSavedTime;
 
     @Unique
     private boolean looted = false;
 
     protected  LootableContainerBlockEntityMixin(BlockEntityType<?> blockEntityType, BlockPos blockPos, BlockState blockState) {
         super(blockEntityType, blockPos, blockState);
+    }
+
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void setLastSavedTime(BlockEntityType<?> blockEntityType, BlockPos blockPos, BlockState blockState, CallbackInfo ci){
+        World world = this.getWorld();
+        if(world == null) {
+            return;
+        }
+        this.lastSavedTime = world.getTime();
     }
 
     @Inject(method = "setStack", at = @At("HEAD"))
@@ -68,24 +77,27 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
             return;
         }
         boolean refillWhenEmpty = world.getGameRules().getBoolean(LootRefill.REFILL_ONLY_WHEN_EMPTY);
+
+        LootRefill.LOGGER.info("Set as looted: {}", !refillWhenEmpty || this.isEmptyNoSideEffects());
         // Consider this container as looted if refillWhenEmpty is false or if the container is empty
         this.looted = !refillWhenEmpty || this.isEmptyNoSideEffects();
+        this.updateLastSavedTime(world);
     }
 
     @Override
     public void lootrefill$writeDataToNbt(NbtCompound nbt) {
-        nbt.putLong("lastRefilledTime", this.lastRefilledTime);
         nbt.putLong("refillCount", this.refillCount);
+        nbt.putLong("lastSavedTime", this.lastSavedTime);
         nbt.putBoolean("looted", this.looted);
     }
 
     @Override
     public void lootrefill$readDataFromNbt(NbtCompound nbt) {
-        if(nbt.contains("lastRefilledTime")) {
-            this.lastRefilledTime = nbt.getLong("lastRefilledTime");
-        }
         if(nbt.contains("refillCount")) {
             this.refillCount = nbt.getLong("refillCount");
+        }
+        if(nbt.contains("lastSavedTime")) {
+            this.lastSavedTime = nbt.getLong("lastSavedTime");
         }
         if(nbt.contains("looted")) {
             this.looted = nbt.getBoolean("looted");
@@ -94,7 +106,9 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
 
     @Override
     public boolean lootrefill$shouldRefillLoot(World world, PlayerEntity player) {
+        this.updateLastSavedTime(world);
         boolean isEmpty = this.isEmptyNoSideEffects();
+        //this.looted = isEmpty || !world.getGameRules().getBoolean(LootRefill.REFILL_ONLY_WHEN_EMPTY);
         if(!this.looted) {
             return false;
         }
@@ -109,7 +123,7 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
         if (this instanceof VieweableContainer vieweableContainer && vieweableContainer.lootrefill$isBeingViewed()) {
             return false;
         }
-        boolean enoughTimePassed = LootRefill.ticksToSeconds(world.getTime()) - lastRefilledTime > world.getGameRules().getInt(LootRefill.SECONDS_UNTIL_REFILL);
+        boolean enoughTimePassed = world.getTime() - this.lastSavedTime >= LootRefill.secondsToTicks(world.getGameRules().getInt(LootRefill.SECONDS_UNTIL_REFILL));
         if(!enoughTimePassed) {
             return false;
         }
@@ -118,9 +132,16 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
 
     @Override
     public void lootrefill$onLootRefilled(World world) {
-        this.lastRefilledTime = LootRefill.ticksToSeconds(world.getTime());
+        this.lastSavedTime = world.getTime();
         this.refillCount++;
         this.looted = false;
+    }
+
+    @Unique
+    private void updateLastSavedTime(World world) {
+        if(!this.looted) {
+            this.lastSavedTime = world.getTime();
+        }
     }
 
     @Unique

@@ -43,8 +43,8 @@ public class LootRefill implements ModInitializer {
 
 	}
 
-	public static long ticksToSeconds(long ticks){
-		return ticks / SharedConstants.TICKS_PER_SECOND;
+	public static long secondsToTicks(long seconds){
+		return seconds * SharedConstants.TICKS_PER_SECOND;
 	}
 
 }
