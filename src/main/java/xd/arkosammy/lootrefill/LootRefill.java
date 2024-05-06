@@ -11,6 +11,7 @@ import net.minecraft.block.entity.LootableContainerBlockEntity;
 import net.minecraft.world.GameRules;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import xd.arkosammy.lootrefill.util.ducks.LootableContainerBlockEntityAccessor;
 
 public class LootRefill implements ModInitializer {
 
@@ -38,7 +39,7 @@ public class LootRefill implements ModInitializer {
 			if(!(blockEntity instanceof LootableContainerBlockEntity lootableContainerBlockEntity)) {
 				return true;
 			}
-			return lootableContainerBlockEntity.getLootTableId() == null;
+			return ((LootableContainerBlockEntityAccessor) lootableContainerBlockEntity).lootrefill$shouldBeProtected(world);
 		});
 
 	}

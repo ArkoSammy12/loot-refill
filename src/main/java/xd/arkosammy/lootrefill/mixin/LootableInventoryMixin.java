@@ -2,8 +2,6 @@ package xd.arkosammy.lootrefill.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.block.entity.LootableContainerBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -29,7 +27,7 @@ public interface LootableInventoryMixin {
 
     @ModifyReturnValue(method = "readLootTable", at = @At("RETURN"))
     private boolean readCustomDataFromNbt(boolean original, @Local(argsOnly = true) NbtCompound nbt){
-        if(original && this instanceof LootableContainerBlockEntity lootableContainerBlockEntity) {
+        if(this instanceof LootableContainerBlockEntity lootableContainerBlockEntity) {
             ((LootableContainerBlockEntityAccessor) lootableContainerBlockEntity).lootrefill$readDataFromNbt(nbt);
         }
         return original;
@@ -37,23 +35,23 @@ public interface LootableInventoryMixin {
 
     @ModifyReturnValue(method = "writeLootTable", at = @At("RETURN"))
     private boolean writeCustomDataToNbt(boolean original, @Local(argsOnly = true) NbtCompound nbt) {
-        if(original && this instanceof LootableContainerBlockEntity lootableContainerBlockEntity) {
+        if(this instanceof LootableContainerBlockEntity lootableContainerBlockEntity) {
             ((LootableContainerBlockEntityAccessor) lootableContainerBlockEntity).lootrefill$writeDataToNbt(nbt);
         }
         return original;
     }
 
     @ModifyExpressionValue(method = "generateLoot", at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/LootableInventory;getLootTableId()Lnet/minecraft/util/Identifier;"))
-    private Identifier modifyLootTableId(Identifier original, @Local(argsOnly = true) @Nullable PlayerEntity player){
-        return this.shouldRefillContainer(player) ? original : null;
-    }
-
-    // Preserve loot table id when generating loot if this is an instance of LootableContainerBlockEntity
-    @WrapOperation(method = "generateLoot", at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/LootableInventory;setLootTableId(Lnet/minecraft/util/Identifier;)V"))
-    private void keepLootTableIdIfNeeded(LootableInventory instance, @Nullable Identifier identifier, Operation<Void> original){
-        if(!(this instanceof LootableContainerBlockEntity) || identifier != null) {
-            original.call(instance, identifier);
+    private Identifier changeRefillConditions(Identifier original, @Local(argsOnly = true) @Nullable PlayerEntity player){
+        if(!(this instanceof LootableContainerBlockEntity lootableContainerBlockEntity)) {
+            return original;
         }
+        // If the loot table id is not null, then store it into the separate cachedLootTableId field for the block entity
+        Identifier lootTableId = this.getLootTableId();
+        if(lootTableId != null) {
+            ((LootableContainerBlockEntityAccessor) lootableContainerBlockEntity).lootrefill$setCachedLootTableId(lootTableId);
+        }
+        return this.shouldRefillContainer(player) ? ((LootableContainerBlockEntityAccessor)lootableContainerBlockEntity).lootrefill$getCachedLootTableId() : null;
     }
 
     @Inject(method = "generateLoot", at = @At(value = "INVOKE", target = "Lnet/minecraft/loot/LootTable;supplyInventory(Lnet/minecraft/inventory/Inventory;Lnet/minecraft/loot/context/LootContextParameterSet;J)V"))
@@ -66,8 +64,7 @@ public interface LootableInventoryMixin {
     @Unique
     private boolean shouldRefillContainer(PlayerEntity player){
         World world = this.getWorld();
-        // If the loot table id is null then this container does not correspond to a container with naturally generated loot
-        if(this.getLootTableId() == null || world == null) {
+        if(world == null) {
             return false;
         }
         if(this instanceof LootableContainerBlockEntity lootableContainerBlockEntity) {
