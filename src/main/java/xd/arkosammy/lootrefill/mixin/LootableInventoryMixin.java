@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import xd.arkosammy.lootrefill.LootRefill;
 import xd.arkosammy.lootrefill.util.ducks.LootableContainerBlockEntityAccessor;
 
@@ -26,20 +27,18 @@ public interface LootableInventoryMixin {
 
     @Shadow @Nullable World getWorld();
 
-    @ModifyReturnValue(method = "readLootTable", at = @At("RETURN"))
-    private boolean readCustomDataFromNbt(boolean original, @Local(argsOnly = true) NbtCompound nbt){
+    @Inject(method = "readLootTable", at = @At("RETURN"))
+    private void readCustomDataFromNbt(NbtCompound nbt, CallbackInfoReturnable<Boolean> cir){
         if(this instanceof LootableContainerBlockEntity lootableContainerBlockEntity) {
             ((LootableContainerBlockEntityAccessor) lootableContainerBlockEntity).lootrefill$readDataFromNbt(nbt);
         }
-        return original;
     }
 
-    @ModifyReturnValue(method = "writeLootTable", at = @At("RETURN"))
-    private boolean writeCustomDataToNbt(boolean original, @Local(argsOnly = true) NbtCompound nbt) {
+    @Inject(method = "writeLootTable", at = @At("RETURN"))
+    private void writeCustomDataToNbt(NbtCompound nbt, CallbackInfoReturnable<Boolean> cir) {
         if(this instanceof LootableContainerBlockEntity lootableContainerBlockEntity) {
             ((LootableContainerBlockEntityAccessor) lootableContainerBlockEntity).lootrefill$writeDataToNbt(nbt);
         }
-        return original;
     }
 
     @ModifyExpressionValue(method = "generateLoot", at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/LootableInventory;getLootTableId()Lnet/minecraft/util/Identifier;"))

@@ -93,13 +93,9 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
             return;
         }
         boolean refillWhenEmpty = world.getGameRules().getBoolean(LootRefill.REFILL_ONLY_WHEN_EMPTY);
-
         // Update the last-saved time before the looted property is updated, to make sure we update it to the last possible time before the countdown can begin
         this.updateLastSavedTime(world);
-
-        // Consider this container as looted if refillWhenEmpty is false or if the container is empty
         this.looted = !refillWhenEmpty || this.isEmptyNoSideEffects();
-
     }
 
     @Override
@@ -140,11 +136,9 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
         }
         this.updateLastSavedTime(world);
         boolean isEmpty = this.isEmptyNoSideEffects();
-        // Do not refill if the container hasn't been looted yet
         if(!this.looted) {
             return false;
         }
-        // Do not refill if the container is not empty and we should care about that
         if(!isEmpty && world.getGameRules().getBoolean(LootRefill.REFILL_ONLY_WHEN_EMPTY)) {
             return false;
         }
@@ -152,15 +146,12 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
         if (maxRefills >= 0 && this.refillCount >= this.maxRefills) {
             return false;
         }
-
-        // Do not refill if the container is being viewed
         if (this instanceof VieweableContainer vieweableContainer && vieweableContainer.lootrefill$isBeingViewed()) {
             return false;
         }
         return world.getTime() - this.lastSavedTime >= LootRefill.secondsToTicks(world.getGameRules().getInt(LootRefill.SECONDS_UNTIL_REFILL));
     }
 
-    // Update the last saved time to now to reset the countdown, increment the refill counter and reset the container back to not being looted
     @Override
     public void lootrefill$onLootRefilled(World world) {
         this.lastSavedTime = world.getTime();
