@@ -12,19 +12,23 @@ import net.fabricmc.fabric.api.gamerule.v1.GameRuleRegistry;
 import net.minecraft.SharedConstants;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.LootableContainerBlockEntity;
-import net.minecraft.command.argument.IdentifierArgumentType;
+import net.minecraft.command.argument.*;
 import net.minecraft.loot.LootDataType;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.LootCommand;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameRules;
+import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import xd.arkosammy.lootrefill.util.ducks.LootableContainerBlockEntityAccessor;
@@ -79,12 +83,8 @@ public class LootRefill implements ModInitializer {
 						Identifier lootTableId = IdentifierArgumentType.getIdentifier(context, "loot_table_id");
 						ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
 
-						MinecraftServer server = player.getServer();
-						if(server == null){
-							player.sendMessage(Text.literal("The server is null!").formatted(Formatting.RED));
-							return Command.SINGLE_SUCCESS;
-						}
-						if(!server.getLootManager().getIds(LootDataType.LOOT_TABLES).contains(lootTableId)){
+						MinecraftServer server = context.getSource().getWorld().getServer();
+                        if(!server.getLootManager().getIds(LootDataType.LOOT_TABLES).contains(lootTableId)){
 							player.sendMessage(Text.literal(String.format("The loot table id %s does not exist!", lootTableId)).formatted(Formatting.RED));
 							return Command.SINGLE_SUCCESS;
 						}
@@ -104,9 +104,40 @@ public class LootRefill implements ModInitializer {
 					})
 					.build();
 
+			ArgumentCommandNode<ServerCommandSource, PosArgument> positionArgumentNode = CommandManager
+					.argument("position", BlockPosArgumentType.blockPos())
+					.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4))
+					.build();
+
+			ArgumentCommandNode<ServerCommandSource, Identifier> worldArgumentNode = CommandManager
+					.argument("world", DimensionArgumentType.dimension())
+					.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4))
+					.executes(context -> {
+						Identifier lootTableId = IdentifierArgumentType.getIdentifier(context, "loot_table_id");
+						ServerPlayerEntity player = context.getSource().getPlayer();
+						ServerWorld world = DimensionArgumentType.getDimensionArgument(context, "world");
+						MinecraftServer server = world.getServer();
+						if(!server.getLootManager().getIds(LootDataType.LOOT_TABLES).contains(lootTableId)){
+							sendMessageToPlayer(player, Text.literal(String.format("The loot table id %s does not exist!", lootTableId)).formatted(Formatting.RED));
+							return Command.SINGLE_SUCCESS;
+						}
+						BlockPos blockPos = BlockPosArgumentType.getBlockPos(context, "position");
+						BlockEntity blockEntity = world.getBlockEntity(blockPos);
+						if(!(blockEntity instanceof LootableContainerBlockEntity lootableContainerBlockEntity)) {
+							sendMessageToPlayer(player, Text.literal(String.format("The block at %s is not a loot container!", blockPos.toShortString())).formatted(Formatting.RED));
+							return Command.SINGLE_SUCCESS;
+						}
+						((LootableContainerBlockEntityAccessor) lootableContainerBlockEntity).lootrefill$setCachedLootTableId(lootTableId);
+						sendMessageToPlayer(player, Text.literal(String.format("Successfully set the loot table id %s for the loot container block at %s!", lootTableId, blockPos.toShortString())).formatted(Formatting.GREEN));
+						return Command.SINGLE_SUCCESS;
+					})
+					.build();
+
 			dispatcher.getRoot().addChild(lootRefillNode);
 			lootRefillNode.addChild(addLootTableIdCommand);
 			addLootTableIdCommand.addChild(addLootTableIdArgumentNode);
+			addLootTableIdArgumentNode.addChild(positionArgumentNode);
+			positionArgumentNode.addChild(worldArgumentNode);
 
 		});
 
@@ -114,6 +145,14 @@ public class LootRefill implements ModInitializer {
 
 	public static long secondsToTicks(long seconds){
 		return seconds * SharedConstants.TICKS_PER_SECOND;
+	}
+
+	private static void sendMessageToPlayer(@Nullable ServerPlayerEntity player, Text message){
+		if(player == null){
+			LOGGER.info(message.getString());
+		} else {
+			player.sendMessage(message, false);
+		}
 	}
 
 }
