@@ -21,4 +21,6 @@ public interface LootableContainerBlockEntityAccessor {
 
     boolean lootrefill$shouldBeProtected(World world);
 
+    void lootrefill$setMaxRefills(long maxRefills);
+
 }

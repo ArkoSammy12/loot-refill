@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import xd.arkosammy.lootrefill.LootRefill;
 import xd.arkosammy.lootrefill.util.ducks.LootableContainerBlockEntityAccessor;
 
 @Mixin(LootableInventory.class)
@@ -45,6 +46,10 @@ public interface LootableInventoryMixin {
     private Identifier changeRefillConditions(Identifier original, @Local(argsOnly = true) @Nullable PlayerEntity player){
         if(!(this instanceof LootableContainerBlockEntity lootableContainerBlockEntity)) {
             return original;
+        }
+        World world = this.getWorld();
+        if(world != null) {
+            ((LootableContainerBlockEntityAccessor) lootableContainerBlockEntity).lootrefill$setMaxRefills(world.getGameRules().getInt(LootRefill.MAX_REFILLS));
         }
         // If the loot table id is not null, then store it into the separate cachedLootTableId field for the block entity
         Identifier lootTableId = this.getLootTableId();

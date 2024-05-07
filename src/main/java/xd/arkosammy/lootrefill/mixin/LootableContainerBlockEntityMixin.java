@@ -40,10 +40,17 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
     private long refillCount;
 
     @Unique
+    private long maxRefills;
+
+    @Unique
     private long lastSavedTime;
 
     @Unique
     private boolean looted;
+
+    protected  LootableContainerBlockEntityMixin(BlockEntityType<?> blockEntityType, BlockPos blockPos, BlockState blockState) {
+        super(blockEntityType, blockPos, blockState);
+    }
 
     @Override
     public void lootrefill$setCachedLootTableId(Identifier lootTableId) {
@@ -55,8 +62,9 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
         return this.cachedLootTableId;
     }
 
-    protected  LootableContainerBlockEntityMixin(BlockEntityType<?> blockEntityType, BlockPos blockPos, BlockState blockState) {
-        super(blockEntityType, blockPos, blockState);
+    @Override
+    public void lootrefill$setMaxRefills(long maxRefills) {
+        this.maxRefills = maxRefills;
     }
 
     @Inject(method = "setStack", at = @At("RETURN"))
@@ -97,6 +105,7 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
     @Override
     public void lootrefill$writeDataToNbt(NbtCompound nbt) {
         nbt.putLong("refillCount", this.refillCount);
+        nbt.putLong("maxRefills", this.maxRefills);
         nbt.putLong("lastSavedTime", this.lastSavedTime);
         nbt.putBoolean("looted", this.looted);
         if(this.cachedLootTableId != null) {
@@ -108,6 +117,9 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
     public void lootrefill$readDataFromNbt(NbtCompound nbt) {
         if(nbt.contains("refillCount")) {
             this.refillCount = nbt.getLong("refillCount");
+        }
+        if(nbt.contains("maxRefills")) {
+            this.maxRefills = nbt.getLong("maxRefills");
         }
         if(nbt.contains("lastSavedTime")) {
             this.lastSavedTime = nbt.getLong("lastSavedTime");
@@ -136,9 +148,8 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
         if(!isEmpty && world.getGameRules().getBoolean(LootRefill.REFILL_ONLY_WHEN_EMPTY)) {
             return false;
         }
-        // A value of -1 for the "maximumAmountOfLootRefills" gamerule means unlimited refills
-        long maxRefills = world.getGameRules().getInt(LootRefill.MAX_REFILLS);
-        if (maxRefills >= 0 && this.refillCount >= maxRefills) {
+        // A value of -1 for maxRefills means unlimited refills
+        if (maxRefills >= 0 && this.refillCount >= this.maxRefills) {
             return false;
         }
 
@@ -155,11 +166,12 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
         this.lastSavedTime = world.getTime();
         this.refillCount++;
         this.looted = false;
+        this.maxRefills = world.getGameRules().getInt(LootRefill.MAX_REFILLS);
     }
 
     @Override
     public boolean lootrefill$shouldBeProtected(World world) {
-        return this.cachedLootTableId != null && this.refillCount < world.getGameRules().getInt(LootRefill.MAX_REFILLS);
+        return this.cachedLootTableId != null && this.refillCount < this.maxRefills;
     }
 
     // Update the last saved time to the current time only if this container has not been looted.
