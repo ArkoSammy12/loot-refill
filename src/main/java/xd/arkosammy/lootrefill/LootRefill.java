@@ -14,6 +14,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.LootableContainerBlockEntity;
 import net.minecraft.command.argument.IdentifierArgumentType;
 import net.minecraft.loot.LootDataType;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.LootCommand;
 import net.minecraft.server.command.ServerCommandSource;
@@ -77,7 +78,13 @@ public class LootRefill implements ModInitializer {
 					.executes(context -> {
 						Identifier lootTableId = IdentifierArgumentType.getIdentifier(context, "loot_table_id");
 						ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-						if(!player.getWorld().getServer().getLootManager().getIds(LootDataType.LOOT_TABLES).contains(lootTableId)){
+
+						MinecraftServer server = player.getServer();
+						if(server == null){
+							player.sendMessage(Text.literal("The server is null!").formatted(Formatting.RED));
+							return Command.SINGLE_SUCCESS;
+						}
+						if(!server.getLootManager().getIds(LootDataType.LOOT_TABLES).contains(lootTableId)){
 							player.sendMessage(Text.literal(String.format("The loot table id %s does not exist!", lootTableId)).formatted(Formatting.RED));
 							return Command.SINGLE_SUCCESS;
 						}
