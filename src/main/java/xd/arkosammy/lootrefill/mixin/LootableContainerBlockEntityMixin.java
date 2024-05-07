@@ -48,7 +48,7 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
     @Unique
     private boolean looted;
 
-    protected  LootableContainerBlockEntityMixin(BlockEntityType<?> blockEntityType, BlockPos blockPos, BlockState blockState) {
+    protected LootableContainerBlockEntityMixin(BlockEntityType<?> blockEntityType, BlockPos blockPos, BlockState blockState) {
         super(blockEntityType, blockPos, blockState);
     }
 
