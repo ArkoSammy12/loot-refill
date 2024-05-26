@@ -162,7 +162,7 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
 
     @Override
     public boolean lootrefill$shouldBeProtected(World world) {
-        return this.cachedLootTableId != null && this.refillCount < this.maxRefills;
+        return this.cachedLootTableId != null && (this.refillCount < this.maxRefills || this.maxRefills == -1);
     }
 
     // Update the last saved time to the current time only if this container has not been looted.
