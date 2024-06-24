@@ -7,14 +7,15 @@ import net.minecraft.block.entity.LootableContainerBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.LootableInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.loot.LootTable;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -27,14 +28,9 @@ import xd.arkosammy.lootrefill.util.ducks.VieweableContainer;
 @Mixin(LootableContainerBlockEntity.class)
 public abstract class LootableContainerBlockEntityMixin extends LockableContainerBlockEntity implements LootableInventory, LootableContainerBlockEntityAccessor {
 
-    // getItemStacks
-    @Shadow protected abstract DefaultedList<ItemStack> method_11282();
-
-    @Shadow public abstract @Nullable Identifier getLootTableId();
-
     @Unique
     @Nullable
-    private Identifier cachedLootTableId;
+    private RegistryKey<LootTable> cachedLootTableKey;
 
     @Unique
     private long refillCount;
@@ -53,13 +49,13 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
     }
 
     @Override
-    public void lootrefill$setCachedLootTableId(Identifier lootTableId) {
-        this.cachedLootTableId = lootTableId;
+    public void lootrefill$setCachedLootTableKey(RegistryKey<LootTable> lootTableRegistryKey) {
+        this.cachedLootTableKey = lootTableRegistryKey;
     }
 
     @Override
-    public Identifier lootrefill$getCachedLootTableId() {
-        return this.cachedLootTableId;
+    public RegistryKey<LootTable> lootrefill$getCachedLootTableId() {
+        return this.cachedLootTableKey;
     }
 
     @Override
@@ -104,8 +100,8 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
         nbt.putLong("maxRefills", this.maxRefills);
         nbt.putLong("lastSavedTime", this.lastSavedTime);
         nbt.putBoolean("looted", this.looted);
-        if(this.cachedLootTableId != null) {
-            nbt.putString("cachedLootTableId", this.cachedLootTableId.toString());
+        if(this.cachedLootTableKey != null) {
+            nbt.putString("cachedLootTableId", this.cachedLootTableKey.toString());
         }
     }
 
@@ -124,7 +120,7 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
             this.looted = nbt.getBoolean("looted");
         }
         if(nbt.contains("cachedLootTableId")) {
-            this.cachedLootTableId = new Identifier(nbt.getString("cachedLootTableId"));
+            this.cachedLootTableKey = RegistryKey.of(RegistryKeys.LOOT_TABLE, Identifier.of(nbt.getString("cachedLootTableId")));
         }
     }
 
@@ -162,7 +158,7 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
 
     @Override
     public boolean lootrefill$shouldBeProtected(World world) {
-        return this.cachedLootTableId != null && (this.refillCount < this.maxRefills || this.maxRefills == -1);
+        return this.cachedLootTableKey != null && (this.refillCount < this.maxRefills || this.maxRefills == -1);
     }
 
     // Update the last saved time to the current time only if this container has not been looted.
@@ -177,7 +173,7 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
     // Check if the container is empty. Do not use the Minecraft provided method since that calls generateLoot(), which we don't want
     @Unique
     private boolean isEmptyNoSideEffects() {
-        return this.method_11282().stream().allMatch(ItemStack::isEmpty);
+        return this.getHeldStacks().stream().allMatch(ItemStack::isEmpty);
     }
 
 }

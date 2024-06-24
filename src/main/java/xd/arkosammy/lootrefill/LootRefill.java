@@ -13,7 +13,9 @@ import net.minecraft.SharedConstants;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.LootableContainerBlockEntity;
 import net.minecraft.command.argument.*;
-import net.minecraft.loot.LootDataType;
+import net.minecraft.loot.LootTable;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.LootCommand;
@@ -80,10 +82,11 @@ public class LootRefill implements ModInitializer {
 					.suggests(LootCommand.SUGGESTION_PROVIDER)
 					.executes(context -> {
 						Identifier lootTableId = IdentifierArgumentType.getIdentifier(context, "loot_table_id");
+						RegistryKey<LootTable> lootTableKey = RegistryKey.of(RegistryKeys.LOOT_TABLE, lootTableId);
 						ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
 
 						MinecraftServer server = context.getSource().getWorld().getServer();
-                        if(!server.getLootManager().getIds(LootDataType.LOOT_TABLES).contains(lootTableId)){
+                        if(!server.getReloadableRegistries().getIds(RegistryKeys.LOOT_TABLE).contains(lootTableId)){
 							player.sendMessage(Text.literal(String.format("The loot table id %s does not exist!", lootTableId)).formatted(Formatting.RED));
 							return Command.SINGLE_SUCCESS;
 						}
@@ -97,7 +100,7 @@ public class LootRefill implements ModInitializer {
 							player.sendMessage(Text.literal("The block you are looking at is not a loot container!").formatted(Formatting.RED));
 							return Command.SINGLE_SUCCESS;
 						}
-						((LootableContainerBlockEntityAccessor) lootableContainerBlockEntity).lootrefill$setCachedLootTableId(lootTableId);
+						((LootableContainerBlockEntityAccessor) lootableContainerBlockEntity).lootrefill$setCachedLootTableKey(lootTableKey);
 						player.sendMessage(Text.literal(String.format("Successfully set the loot table id %s for the loot container block at %s!", lootTableId, blockHitResult.getBlockPos().toShortString())).formatted(Formatting.GREEN));
 						return Command.SINGLE_SUCCESS;
 					})
@@ -113,10 +116,11 @@ public class LootRefill implements ModInitializer {
 					.requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4))
 					.executes(context -> {
 						Identifier lootTableId = IdentifierArgumentType.getIdentifier(context, "loot_table_id");
+						RegistryKey<LootTable> lootTableKey = RegistryKey.of(RegistryKeys.LOOT_TABLE, lootTableId);
 						ServerPlayerEntity player = context.getSource().getPlayer();
 						ServerWorld world = DimensionArgumentType.getDimensionArgument(context, "world");
 						MinecraftServer server = world.getServer();
-						if(!server.getLootManager().getIds(LootDataType.LOOT_TABLES).contains(lootTableId)){
+						if(!server.getReloadableRegistries().getIds(RegistryKeys.LOOT_TABLE).contains(lootTableId)){
 							sendMessageToPlayer(player, Text.literal(String.format("The loot table id %s does not exist!", lootTableId)).formatted(Formatting.RED));
 							return Command.SINGLE_SUCCESS;
 						}
@@ -126,7 +130,7 @@ public class LootRefill implements ModInitializer {
 							sendMessageToPlayer(player, Text.literal(String.format("The block at %s is not a loot container!", blockPos.toShortString())).formatted(Formatting.RED));
 							return Command.SINGLE_SUCCESS;
 						}
-						((LootableContainerBlockEntityAccessor) lootableContainerBlockEntity).lootrefill$setCachedLootTableId(lootTableId);
+						((LootableContainerBlockEntityAccessor) lootableContainerBlockEntity).lootrefill$setCachedLootTableKey(lootTableKey);
 						sendMessageToPlayer(player, Text.literal(String.format("Successfully set the loot table id %s for the loot container block at %s!", lootTableId, blockPos.toShortString())).formatted(Formatting.GREEN));
 						return Command.SINGLE_SUCCESS;
 					})

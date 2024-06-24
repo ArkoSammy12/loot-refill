@@ -1,8 +1,9 @@
 package xd.arkosammy.lootrefill.util.ducks;
 
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.loot.LootTable;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.util.Identifier;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.world.World;
 
 public interface LootableContainerBlockEntityAccessor {
@@ -15,9 +16,9 @@ public interface LootableContainerBlockEntityAccessor {
 
     void lootrefill$onLootRefilled(World world);
 
-    void lootrefill$setCachedLootTableId(Identifier lootTableId);
+    void lootrefill$setCachedLootTableKey(RegistryKey<LootTable> lootTableRegistryKey);
 
-    Identifier lootrefill$getCachedLootTableId();
+    RegistryKey<LootTable> lootrefill$getCachedLootTableId();
 
     boolean lootrefill$shouldBeProtected(World world);
 
