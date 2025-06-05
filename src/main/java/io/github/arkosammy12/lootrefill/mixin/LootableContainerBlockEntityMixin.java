@@ -1,5 +1,7 @@
 package io.github.arkosammy12.lootrefill.mixin;
 
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import io.github.arkosammy12.lootrefill.LootRefill;
 import io.github.arkosammy12.lootrefill.ducks.LootableContainerBlockEntityDuck;
 import io.github.arkosammy12.lootrefill.utils.ConfigUtils;
@@ -16,15 +18,11 @@ import net.minecraft.loot.LootTable;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(LootableContainerBlockEntity.class)
 public abstract class LootableContainerBlockEntityMixin extends LockableContainerBlockEntity implements LootableInventory, LootableContainerBlockEntityDuck {
-
-    @Shadow @Nullable protected RegistryKey<LootTable> lootTable;
 
     protected LootableContainerBlockEntityMixin(BlockEntityType<?> blockEntityType, BlockPos blockPos, BlockState blockState) {
         super(blockEntityType, blockPos, blockState);
@@ -32,44 +30,41 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
 
     @Override
     public boolean lootrefill$shouldRefillLoot(World world) {
-
         if (this.lootrefill$getSavedLootTableKey() == null) {
             return false;
         }
 
+        // Allow the container to be filled if it is the first time being filled
         long refillCount = this.lootrefill$getRefillCount();
-
-        // Allow container to be filled if it is the first time being filled
         if (refillCount <= 0) {
             return true;
         }
-        boolean isEmpty = this.isEmptyNoSideEffects();
-        boolean isLooted = this.lootrefill$isLooted() || isEmpty;
 
+        boolean isLooted = this.lootrefill$isLooted();
         if (!isLooted) {
             return false;
         }
 
+        boolean isEmpty = this.isEmptyNoSideEffects();
         boolean refillOnlyWhenEmpty = ConfigManagerUtils.getRawBooleanSettingValue(LootRefill.CONFIG_MANAGER, ConfigUtils.REFILL_ONLY_WHEN_EMPTY);
         if (!isEmpty && refillOnlyWhenEmpty) {
             return false;
         }
 
+        // maxRefills == -1 means unlimited refills. maxRefills == 0 means no refills.
         long maxRefills = this.lootrefill$getMaxRefills();
-
-        // A value of -1 for maxRefills means unlimited refills. A value of 0 means no refills.
         if (maxRefills == 0 || (maxRefills > 0 && refillCount >= maxRefills)) {
             return false;
         }
 
+        // Do not refill if it is being viewed
         if (this instanceof ViewableContainer viewableContainer && viewableContainer.lootrefill$isBeingViewed()) {
             return false;
         }
-
         long lastSavedTime = lootrefill$getLastSavedTime();
         long currentTime = world.getTime();
         long timeDifference = currentTime - lastSavedTime;
-        long ticksUntilRefill = Utils.secondsToTicks(ConfigManagerUtils.getRawNumberSettingValue(LootRefill.CONFIG_MANAGER, ConfigUtils.TIME_UNTIL_REFILLS));
+        long ticksUntilRefill = Utils.secondsToTicks(Long.valueOf(ConfigManagerUtils.getRawNumberSettingValue(LootRefill.CONFIG_MANAGER, ConfigUtils.TIME_UNTIL_REFILLS)));
         return timeDifference >= ticksUntilRefill;
 
     }
@@ -80,7 +75,7 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
         long oldRefillCount = this.lootrefill$getRefillCount();
 
         long newLastSavedTime = world.getTime();
-        int newMaxRefills = (int) ConfigManagerUtils.getRawNumberSettingValue(LootRefill.CONFIG_MANAGER, ConfigUtils.MAX_REFILLS);
+        long newMaxRefills = Long.valueOf(ConfigManagerUtils.getRawNumberSettingValue(LootRefill.CONFIG_MANAGER, ConfigUtils.MAX_REFILLS));
         long newRefillCount = oldRefillCount + 1;
 
         this.lootrefill$setLastSavedTime(newLastSavedTime);
@@ -105,6 +100,16 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
     @Override
     public RegistryKey<LootTable> lootrefill$getSavedLootTableKey() {
         return this.getAttached(LootRefill.SAVED_LOOT_TABLE_KEY);
+    }
+
+    @Override
+    public void lootrefill$setSavedLootTableSeed(long lootTableSeed) {
+        this.setAttached(LootRefill.SAVED_LOOT_TABLE_SEED, lootTableSeed);
+    }
+
+    @Override
+    public long lootrefill$getSavedLootTableSeed() {
+        return this.getAttachedOrElse(LootRefill.SAVED_LOOT_TABLE_SEED, 0L);
     }
 
     @Override
@@ -146,13 +151,25 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
 
     @Override
     public boolean lootrefill$isLooted() {
-        return this.getAttached(LootRefill.LOOTED);
+        return this.getAttached(LootRefill.LOOTED) || this.isEmptyNoSideEffects();
     }
 
     // Check if the container is empty. Do not use the Minecraft provided method since that calls generateLoot(), which we don't want
     @Unique
     private boolean isEmptyNoSideEffects() {
         return this.getHeldStacks().stream().allMatch(ItemStack::isEmpty);
+    }
+
+    @WrapMethod(method = "removeStack(I)Lnet/minecraft/item/ItemStack;")
+    private ItemStack onStackRemoved(int slot, Operation<ItemStack> original) {
+        this.lootrefill$setLooted(true);
+        return original.call(slot);
+    }
+
+    @WrapMethod(method = "removeStack(II)Lnet/minecraft/item/ItemStack;")
+    private ItemStack onStackSplit(int slot, int amount, Operation<ItemStack> original) {
+        this.lootrefill$setLooted(true);
+        return original.call(slot, amount);
     }
 
 }

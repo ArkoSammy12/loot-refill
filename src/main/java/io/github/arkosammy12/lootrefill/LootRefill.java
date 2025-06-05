@@ -26,6 +26,10 @@ public class LootRefill implements ModInitializer {
     public static final String MOD_ID = "lootrefill";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
     public static final AttachmentType<RegistryKey<LootTable>> SAVED_LOOT_TABLE_KEY = AttachmentRegistry.createPersistent(Identifier.of(MOD_ID, "container_saved_loot_table_key"), RegistryKey.createCodec(RegistryKeys.LOOT_TABLE));
+    public static final AttachmentType<Long> SAVED_LOOT_TABLE_SEED = AttachmentRegistry.create(Identifier.of(MOD_ID, "container_saved_loot_table_seed"), (builder) -> {
+        builder.persistent(Codec.LONG);
+        builder.initializer(() -> 0L);
+    });
     public static final AttachmentType<Long> REFILL_COUNT = AttachmentRegistry.create(Identifier.of(MOD_ID, "container_refill_cont"), (builder) -> {
         builder.persistent(Codec.LONG);
         builder.initializer(() -> 0L);

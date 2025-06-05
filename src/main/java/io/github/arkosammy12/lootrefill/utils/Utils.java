@@ -147,8 +147,8 @@ public final class Utils {
 
     }
 
-    public static long secondsToTicks(int seconds){
-        return (long) seconds * SharedConstants.TICKS_PER_SECOND;
+    public static long secondsToTicks(long seconds){
+        return seconds * SharedConstants.TICKS_PER_SECOND;
     }
 
     private static void sendMessageToPlayer(@Nullable ServerPlayerEntity player, Text message) {

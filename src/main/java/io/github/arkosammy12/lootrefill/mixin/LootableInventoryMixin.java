@@ -20,27 +20,33 @@ public interface LootableInventoryMixin extends Inventory {
 
     @Shadow @Nullable World getWorld();
 
-
     @WrapOperation(method = "generateLoot", at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/LootableInventory;getLootTable()Lnet/minecraft/registry/RegistryKey;"))
     private @Nullable RegistryKey<LootTable> modifyLootTableReturnValue(LootableInventory instance, Operation<RegistryKey<LootTable>> original) {
         RegistryKey<LootTable> originalLootTableKey = original.call(instance);
+        World world = instance.getWorld();
+        if (world == null || world.isClient()) {
+            return originalLootTableKey;
+        }
         if (!(instance instanceof LootableContainerBlockEntity lootableContainerBlockEntity)) {
             return originalLootTableKey;
         }
         if (originalLootTableKey != null) {
             ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$setSavedLootTableKey(originalLootTableKey);
-            lootableContainerBlockEntity.setLootTableSeed(this.getWorld().getRandom().nextLong());
             return originalLootTableKey;
         }
-        return !((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$shouldRefillLoot(this.getWorld()) ? null : ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$getSavedLootTableKey();
+        return !((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$shouldRefillLoot(world) ? null : ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$getSavedLootTableKey();
     }
 
 
     @WrapOperation(method = "generateLoot", at = @At(value = "INVOKE", target = "Lnet/minecraft/loot/LootTable;supplyInventory(Lnet/minecraft/inventory/Inventory;Lnet/minecraft/loot/context/LootWorldContext;J)V"))
     private void onLootTableSupplied(LootTable instance, Inventory inventory, LootWorldContext parameters, long seed, Operation<Void> original) {
-        if (inventory instanceof LootableContainerBlockEntity lootableContainerBlockEntity) {
-            ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$onLootRefilled(this.getWorld());
+        if (!(inventory instanceof LootableContainerBlockEntity lootableContainerBlockEntity)) {
+            original.call(instance, inventory, parameters, seed);
+            return;
         }
+        ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$setSavedLootTableSeed(seed);
+        ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$onLootRefilled(this.getWorld());
+        // TODO: What to do with the saved loot table seed
         original.call(instance, inventory, parameters, seed);
     }
 

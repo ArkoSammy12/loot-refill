@@ -16,6 +16,10 @@ public interface LootableContainerBlockEntityDuck {
 
     RegistryKey<LootTable> lootrefill$getSavedLootTableKey();
 
+    void lootrefill$setSavedLootTableSeed(long lootTableSeed);
+
+    long lootrefill$getSavedLootTableSeed();
+
     void lootrefill$setRefillCount(long refillCount);
 
     long lootrefill$getRefillCount();
