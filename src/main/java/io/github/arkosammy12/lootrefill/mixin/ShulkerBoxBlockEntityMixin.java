@@ -1,12 +1,12 @@
-package xd.arkosammy.lootrefill.mixin;
+package io.github.arkosammy12.lootrefill.mixin;
 
+import io.github.arkosammy12.lootrefill.utils.ViewableContainer;
 import net.minecraft.block.entity.ShulkerBoxBlockEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import xd.arkosammy.lootrefill.util.ducks.VieweableContainer;
 
 @Mixin(ShulkerBoxBlockEntity.class)
-public class ShulkerBoxBlockEntityMixin implements VieweableContainer {
+public abstract class ShulkerBoxBlockEntityMixin implements ViewableContainer {
 
     @Shadow private int viewerCount;
 
@@ -14,4 +14,5 @@ public class ShulkerBoxBlockEntityMixin implements VieweableContainer {
     public boolean lootrefill$isBeingViewed() {
         return this.viewerCount > 0;
     }
+
 }
