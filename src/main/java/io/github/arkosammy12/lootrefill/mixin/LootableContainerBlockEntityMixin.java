@@ -30,7 +30,7 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
 
     @Override
     public boolean lootrefill$shouldRefillLoot(World world, ServerPlayerEntity player) {
-        if (this.lootrefill$getCustomData().getSavedLootTableKey() == null) {
+        if (this.lootrefill$getCustomData().getSavedLootTableId() == null) {
             return false;
         }
 
@@ -100,7 +100,7 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
         long refillCount = this.lootrefill$getCustomData().getGlobalRefillCount();
         long maxRefills = this.lootrefill$getCustomData().getGlobalMaxRefillAmount();
         boolean protectLootContainers = ConfigManagerUtils.getRawBooleanSettingValue(LootRefill.CONFIG_MANAGER, ConfigUtils.PROTECT_LOOT_CONTAINERS);
-        return protectLootContainers && (this.lootrefill$getCustomData().getSavedLootTableKey() != null && (refillCount < maxRefills || maxRefills == -1));
+        return protectLootContainers && (this.lootrefill$getCustomData().getSavedLootTableId() != null && (refillCount < maxRefills || maxRefills == -1));
     }
 
     @Override

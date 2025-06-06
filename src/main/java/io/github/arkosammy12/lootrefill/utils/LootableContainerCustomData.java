@@ -17,7 +17,7 @@ import java.util.UUID;
 public class LootableContainerCustomData {
 
     public static final Codec<LootableContainerCustomData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            RegistryKey.createCodec(RegistryKeys.LOOT_TABLE).fieldOf("saved_loot_table_registry_key").forGetter(LootableContainerCustomData::getSavedLootTableKey),
+            RegistryKey.createCodec(RegistryKeys.LOOT_TABLE).fieldOf("saved_loot_table_id").forGetter(LootableContainerCustomData::getSavedLootTableId),
             Codec.LONG.fieldOf("saved_loot_table_seed").forGetter(LootableContainerCustomData::getSavedLootTableSeed),
             Codec.LONG.fieldOf("global_refill_count").forGetter(LootableContainerCustomData::getGlobalRefillCount),
             Codec.LONG.fieldOf("global_max_refill_amount").forGetter(LootableContainerCustomData::getGlobalMaxRefillAmount),
@@ -32,7 +32,7 @@ public class LootableContainerCustomData {
         builder.initializer(LootableContainerCustomData::new);
     });
 
-    private RegistryKey<LootTable> savedLootTableKey;
+    private RegistryKey<LootTable> savedLootTableId;
     private long savedLootTableSeed;
     private long globalRefillCount ;
     private long individualRefillAmount;
@@ -41,8 +41,8 @@ public class LootableContainerCustomData {
     private boolean looted = false;
     private final Map<UUID, Long> playerRefillCount;
 
-    public LootableContainerCustomData(RegistryKey<LootTable> savedLootTableKey, long savedLootTableSeed, long globalRefillCount, long individualRefillAmount, long globalMaxRefillAmount, long lastRefilledTime, boolean looted, Map<UUID, Long> playerRefillCount) {
-        this.savedLootTableKey = savedLootTableKey;
+    public LootableContainerCustomData(RegistryKey<LootTable> savedLootTableId, long savedLootTableSeed, long globalRefillCount, long individualRefillAmount, long globalMaxRefillAmount, long lastRefilledTime, boolean looted, Map<UUID, Long> playerRefillCount) {
+        this.savedLootTableId = savedLootTableId;
         this.savedLootTableSeed = savedLootTableSeed;
         this.globalRefillCount = globalRefillCount;
         this.individualRefillAmount = individualRefillAmount;
@@ -59,12 +59,12 @@ public class LootableContainerCustomData {
         this.playerRefillCount = new HashMap<>();
     }
 
-    public void setSavedLootTableKey(RegistryKey<LootTable> savedLootTableKey) {
-        this.savedLootTableKey = savedLootTableKey;
+    public void setSavedLootTableId(RegistryKey<LootTable> savedLootTableId) {
+        this.savedLootTableId = savedLootTableId;
     }
 
-    public RegistryKey<LootTable> getSavedLootTableKey() {
-        return this.savedLootTableKey;
+    public RegistryKey<LootTable> getSavedLootTableId() {
+        return this.savedLootTableId;
     }
 
     public void setSavedLootTableSeed(long savedLootTableSeed) {

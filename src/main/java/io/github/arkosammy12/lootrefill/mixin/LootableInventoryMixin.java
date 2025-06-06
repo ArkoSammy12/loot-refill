@@ -38,22 +38,22 @@ public interface LootableInventoryMixin extends Inventory {
 
     @WrapOperation(method = "generateLoot", at = @At(value = "INVOKE", target = "Lnet/minecraft/inventory/LootableInventory;getLootTable()Lnet/minecraft/registry/RegistryKey;"))
     private @Nullable RegistryKey<LootTable> modifyLootTableReturnValue(LootableInventory instance, Operation<RegistryKey<LootTable>> original, @Local(argsOnly = true) PlayerEntity player) {
-        RegistryKey<LootTable> originalLootTableKey = original.call(instance);
+        RegistryKey<LootTable> originalLootTableId = original.call(instance);
         World world = instance.getWorld();
         if (world == null || world.isClient()) {
-            return originalLootTableKey;
+            return originalLootTableId;
         }
         if (!(player instanceof ServerPlayerEntity serverPlayer)) {
-            return originalLootTableKey;
+            return originalLootTableId;
         }
         if (!(instance instanceof LootableContainerBlockEntity lootableContainerBlockEntity)) {
-            return originalLootTableKey;
+            return originalLootTableId;
         }
-        if (originalLootTableKey != null) {
-            ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$getCustomData().setSavedLootTableKey(originalLootTableKey);
-            return originalLootTableKey;
+        if (originalLootTableId != null) {
+            ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$getCustomData().setSavedLootTableId(originalLootTableId);
+            return originalLootTableId;
         }
-        return !((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$shouldRefillLoot(world, serverPlayer) ? null : ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$getCustomData().getSavedLootTableKey();
+        return !((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$shouldRefillLoot(world, serverPlayer) ? null : ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$getCustomData().getSavedLootTableId();
     }
 
 

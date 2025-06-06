@@ -67,16 +67,16 @@ public final class Utils {
                 return node;
             }) : dispatcher.getRoot().getChild(LootRefill.MOD_ID);
 
-            LiteralCommandNode<ServerCommandSource> addLootTableNode = CommandManager
-                    .literal("addLootTable")
+            LiteralCommandNode<ServerCommandSource> setLootTableIdNode = CommandManager
+                    .literal("setLootTableId")
                     .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4))
                     .build();
 
             ArgumentCommandNode<ServerCommandSource, Identifier> addLootTableArgumentNode = CommandManager
-                    .argument("loot_table_registry_key", IdentifierArgumentType.identifier())
+                    .argument("lootTableId", IdentifierArgumentType.identifier())
                     .suggests(LootCommand.SUGGESTION_PROVIDER)
                     .executes(ctx -> {
-                        Identifier lootTableId = IdentifierArgumentType.getIdentifier(ctx, "loot_table_registry_key");
+                        Identifier lootTableId = IdentifierArgumentType.getIdentifier(ctx, "lootTableId");
                         RegistryKey<LootTable> lootTableKey = RegistryKey.of(RegistryKeys.LOOT_TABLE, lootTableId);
                         ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
 
@@ -95,7 +95,7 @@ public final class Utils {
                             player.sendMessage(Text.literal("The block you are looking at is not a loot container!").formatted(Formatting.RED));
                             return Command.SINGLE_SUCCESS;
                         }
-                        ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$getCustomData().setSavedLootTableKey(lootTableKey);
+                        ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$getCustomData().setSavedLootTableId(lootTableKey);
                         player.sendMessage(Text.literal(String.format("Successfully set the loot table id %s for the loot container block at %s!", lootTableId, blockHitResult.getBlockPos().toShortString())).formatted(Formatting.GREEN));
                         return Command.SINGLE_SUCCESS;
                     })
@@ -125,7 +125,7 @@ public final class Utils {
                             sendMessageToPlayer(player, Text.literal(String.format("The block at %s is not a loot container!", blockPos.toShortString())).formatted(Formatting.RED));
                             return Command.SINGLE_SUCCESS;
                         }
-                        ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$getCustomData().setSavedLootTableKey(lootTableKey);
+                        ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$getCustomData().setSavedLootTableId(lootTableKey);
                         sendMessageToPlayer(player, Text.literal(String.format("Successfully set the loot table id %s for the loot container block at %s!", lootTableId, blockPos.toShortString())).formatted(Formatting.GREEN));
                         return Command.SINGLE_SUCCESS;
                     })
@@ -183,10 +183,10 @@ public final class Utils {
                     })
                     .build();
 
-            lootRefillNode.addChild(addLootTableNode);
+            lootRefillNode.addChild(setLootTableIdNode);
             lootRefillNode.addChild(setMaxRefillAmountNode);
 
-            addLootTableNode.addChild(addLootTableArgumentNode);
+            setLootTableIdNode.addChild(addLootTableArgumentNode);
             addLootTableArgumentNode.addChild(lootTablePositionArgumentNode);
             lootTablePositionArgumentNode.addChild(lootTableWorldArgumentNode);
 
