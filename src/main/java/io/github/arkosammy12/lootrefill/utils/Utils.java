@@ -80,7 +80,7 @@ public final class Utils {
                         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
 
                         MinecraftServer server = context.getSource().getWorld().getServer();
-                        if(!server.getReloadableRegistries().getIds(RegistryKeys.LOOT_TABLE).contains(lootTableId)){
+                        if (!server.getReloadableRegistries().getIds(RegistryKeys.LOOT_TABLE).contains(lootTableId)){
                             player.sendMessage(Text.literal(String.format("The loot table id %s does not exist!", lootTableId)).formatted(Formatting.RED));
                             return Command.SINGLE_SUCCESS;
                         }
@@ -138,7 +138,7 @@ public final class Utils {
         });
     }
 
-    public static long secondsToTicks(long seconds){
+    public static long secondsToTicks(long seconds) {
         return seconds * SharedConstants.TICKS_PER_SECOND;
     }
 
