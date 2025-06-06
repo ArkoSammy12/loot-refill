@@ -51,12 +51,10 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
             return false;
         }
 
+        // maxRefills == -1 means unlimited refills. maxRefills == 0 means no refills.
         long globalMaxRefillAmount = this.lootrefill$getCustomData().getGlobalMaxRefillAmount();
         long individualMaxRefillAmount = this.lootrefill$getCustomData().getIndividualRefillAmount();
-
-        // maxRefills == -1 means unlimited refills. maxRefills == 0 means no refills.
         long maxRefills = individualMaxRefillAmount >= 0 ? individualMaxRefillAmount : globalMaxRefillAmount;
-
         if (maxRefills == 0) {
             return false;
         }
@@ -73,6 +71,7 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
         if (this instanceof ViewableContainer viewableContainer && viewableContainer.lootrefill$isBeingViewed()) {
             return false;
         }
+
         long lastRefilledTime = this.lootrefill$getCustomData().getLastRefilledTime();
         long currentTime = world.getTime();
         long timeDifference = currentTime - lastRefilledTime;
