@@ -40,7 +40,6 @@ public final class Utils {
     }
 
     public static void registerEvents() {
-
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, entity) -> {
             if (world.isClient()) {
                 return true;
@@ -54,11 +53,9 @@ public final class Utils {
             }
             return !((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$shouldBeProtected(world);
         });
-
     }
 
     public static void registerCommands() {
-
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             CommandNode<ServerCommandSource> lootRefillNode = dispatcher.getRoot().getChild(LootRefill.MOD_ID) == null ? Suppliers.get(() -> {
                 LiteralCommandNode<ServerCommandSource> node = CommandManager
@@ -139,7 +136,6 @@ public final class Utils {
             positionArgumentNode.addChild(worldArgumentNode);
 
         });
-
     }
 
     public static long secondsToTicks(long seconds){
