@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import io.github.arkosammy12.lootrefill.LootRefill;
 import io.github.arkosammy12.lootrefill.ducks.LootableContainerBlockEntityDuck;
 import io.github.arkosammy12.lootrefill.utils.ConfigUtils;
+import io.github.arkosammy12.lootrefill.utils.LootableContainerCustomData;
 import io.github.arkosammy12.lootrefill.utils.Utils;
 import io.github.arkosammy12.lootrefill.utils.ViewableContainer;
 import io.github.arkosammy12.monkeyconfig.managers.ConfigManagerUtils;
@@ -14,8 +15,7 @@ import net.minecraft.block.entity.LockableContainerBlockEntity;
 import net.minecraft.block.entity.LootableContainerBlockEntity;
 import net.minecraft.inventory.LootableInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.loot.LootTable;
-import net.minecraft.registry.RegistryKey;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
@@ -29,14 +29,14 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
     }
 
     @Override
-    public boolean lootrefill$shouldRefillLoot(World world) {
-        if (this.lootrefill$getSavedLootTableKey() == null) {
+    public boolean lootrefill$shouldRefillLoot(World world, ServerPlayerEntity player) {
+        if (this.lootrefill$getCustomData().getSavedLootTableKey() == null) {
             return false;
         }
 
         // Allow the container to be filled if it is the first time being filled
-        long refillCount = this.lootrefill$getRefillCount();
-        if (refillCount <= 0) {
+        long globalRefillCount = this.lootrefill$getCustomData().getGlobalRefillCount();
+        if (globalRefillCount <= 0) {
             return true;
         }
 
@@ -51,9 +51,21 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
             return false;
         }
 
+        long globalMaxRefillAmount = this.lootrefill$getCustomData().getGlobalMaxRefillAmount();
+        long individualMaxRefillAmount = this.lootrefill$getCustomData().getIndividualRefillAmount();
+
         // maxRefills == -1 means unlimited refills. maxRefills == 0 means no refills.
-        long maxRefills = this.lootrefill$getMaxRefills();
-        if (maxRefills == 0 || (maxRefills > 0 && refillCount >= maxRefills)) {
+        long maxRefills = individualMaxRefillAmount >= 0 ? individualMaxRefillAmount : globalMaxRefillAmount;
+
+        if (maxRefills == 0) {
+            return false;
+        }
+
+        boolean perPlayerRefillCounts = ConfigManagerUtils.getRawBooleanSettingValue(LootRefill.CONFIG_MANAGER, ConfigUtils.PER_PLAYER_REFILL_COUNTS);
+        if (perPlayerRefillCounts && maxRefills > 0 && this.lootrefill$getCustomData().getRefillCountForPlayer(player.getUuid()) >= maxRefills) {
+            return false;
+        }
+        if (maxRefills > 0 && globalRefillCount >= maxRefills) {
             return false;
         }
 
@@ -61,7 +73,7 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
         if (this instanceof ViewableContainer viewableContainer && viewableContainer.lootrefill$isBeingViewed()) {
             return false;
         }
-        long lastRefilledTime = lootrefill$getLastRefilledTime();
+        long lastRefilledTime = this.lootrefill$getCustomData().getLastRefilledTime();
         long currentTime = world.getTime();
         long timeDifference = currentTime - lastRefilledTime;
         long ticksUntilRefill = Utils.secondsToTicks(ConfigManagerUtils.getRawNumberSettingValue(LootRefill.CONFIG_MANAGER, ConfigUtils.TIME_UNTIL_REFILLS).longValue());
@@ -69,88 +81,37 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
     }
 
     @Override
-    public void lootrefill$onLootRefilled(World world) {
+    public void lootrefill$onLootRefilled(World world, ServerPlayerEntity player) {
 
-        long oldRefillCount = this.lootrefill$getRefillCount();
+        long oldRefillCount = this.lootrefill$getCustomData().getGlobalRefillCount();
 
         long newLastRefilledTime = world.getTime();
         long newMaxRefills = ConfigManagerUtils.getRawNumberSettingValue(LootRefill.CONFIG_MANAGER, ConfigUtils.MAX_REFILLS).longValue();
         long newRefillCount = oldRefillCount + 1;
 
-        this.lootrefill$setLastRefilledTime(newLastRefilledTime);
-        this.lootrefill$setMaxRefills(newMaxRefills);
-        this.lootrefill$setRefillCount(newRefillCount);
-        this.lootrefill$setLooted(false);
+        this.lootrefill$getCustomData().setLastRefilledTime(newLastRefilledTime);
+        this.lootrefill$getCustomData().setGlobalMaxRefillAmount(newMaxRefills);
+        this.lootrefill$getCustomData().setGlobalRefillCont(newRefillCount);
+        this.lootrefill$getCustomData().setLooted(false);
+        this.lootrefill$getCustomData().incrementRefillCountForPlayer(player.getUuid());
     }
 
     @Override
     public boolean lootrefill$shouldBeProtected(World world) {
-        long refillCount = this.lootrefill$getRefillCount();
-        long maxRefills = this.lootrefill$getMaxRefills();
+        long refillCount = this.lootrefill$getCustomData().getGlobalRefillCount();
+        long maxRefills = this.lootrefill$getCustomData().getGlobalMaxRefillAmount();
         boolean protectLootContainers = ConfigManagerUtils.getRawBooleanSettingValue(LootRefill.CONFIG_MANAGER, ConfigUtils.PROTECT_LOOT_CONTAINERS);
-        return protectLootContainers && (this.lootrefill$getSavedLootTableKey() != null && (refillCount < maxRefills || maxRefills == -1));
+        return protectLootContainers && (this.lootrefill$getCustomData().getSavedLootTableKey() != null && (refillCount < maxRefills || maxRefills == -1));
     }
 
     @Override
-    public void lootrefill$setSavedLootTableKey(RegistryKey<LootTable> lootTableRegistryKey) {
-        this.setAttached(LootRefill.SAVED_LOOT_TABLE_KEY, lootTableRegistryKey);
-    }
-
-    @Override
-    public RegistryKey<LootTable> lootrefill$getSavedLootTableKey() {
-        return this.getAttached(LootRefill.SAVED_LOOT_TABLE_KEY);
-    }
-
-    @Override
-    public void lootrefill$setSavedLootTableSeed(long lootTableSeed) {
-        this.setAttached(LootRefill.SAVED_LOOT_TABLE_SEED, lootTableSeed);
-    }
-
-    @Override
-    public long lootrefill$getSavedLootTableSeed() {
-        return this.getAttachedOrElse(LootRefill.SAVED_LOOT_TABLE_SEED, 0L);
-    }
-
-    @Override
-    public void lootrefill$setRefillCount(long refillCount) {
-        this.setAttached(LootRefill.REFILL_COUNT, refillCount);
-    }
-
-    @Override
-    public long lootrefill$getRefillCount() {
-        return this.getAttachedOrElse(LootRefill.REFILL_COUNT, 0L);
-    }
-
-
-    @Override
-    public void lootrefill$setMaxRefills(long maxRefills) {
-        this.setAttached(LootRefill.MAX_REFILLS, maxRefills);
-    }
-
-
-    @Override
-    public long lootrefill$getMaxRefills() {
-        return this.getAttachedOrElse(LootRefill.MAX_REFILLS, -1L);
-    }
-
-    @Override
-    public void lootrefill$setLastRefilledTime(long lastSavedTime) {
-        this.setAttached(LootRefill.LAST_REFILLED_TIME, lastSavedTime);
-    }
-
-    @Override
-    public long lootrefill$getLastRefilledTime() {
-        return this.getAttached(LootRefill.LAST_REFILLED_TIME);
-    }
-
-    @Override
-    public void lootrefill$setLooted(boolean looted) {
-        this.setAttached(LootRefill.LOOTED, looted);
+    public LootableContainerCustomData lootrefill$getCustomData() {
+        return this.getAttachedOrCreate(LootableContainerCustomData.ATTACHMENT);
     }
 
     @Override
     public boolean lootrefill$isLooted() {
-        return this.getAttached(LootRefill.LOOTED) || this.isEmptyNoSideEffects();
+        return this.lootrefill$getCustomData().isLooted() || this.isEmptyNoSideEffects();
     }
 
     // Check if the container is empty. Do not use the Minecraft provided method since that calls generateLoot(), which we don't want
@@ -161,20 +122,20 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
 
     @WrapMethod(method = "removeStack(I)Lnet/minecraft/item/ItemStack;")
     private ItemStack onStackRemoved(int slot, Operation<ItemStack> original) {
-        this.lootrefill$setLooted(true);
+        this.lootrefill$getCustomData().setLooted(true);
         return original.call(slot);
     }
 
     @WrapMethod(method = "removeStack(II)Lnet/minecraft/item/ItemStack;")
     private ItemStack onStackSplit(int slot, int amount, Operation<ItemStack> original) {
-        this.lootrefill$setLooted(true);
+        this.lootrefill$getCustomData().setLooted(true);
         return original.call(slot, amount);
     }
 
     @WrapMethod(method = "setStack")
     private void onStackSet(int slot, ItemStack stack, Operation<Void> original) {
         if (stack.isEmpty()) {
-            this.lootrefill$setLooted(true);
+            this.lootrefill$getCustomData().setLooted(true);
         }
         original.call(slot, stack);
     }

@@ -10,6 +10,7 @@ public final class ConfigUtils {
 
     public static ElementPath TIME_UNTIL_REFILLS;
     public static ElementPath MAX_REFILLS;
+    public static ElementPath PER_PLAYER_REFILL_COUNTS;
     public static ElementPath REFILL_ONLY_WHEN_EMPTY;
     public static ElementPath PROTECT_LOOT_CONTAINERS;
 
