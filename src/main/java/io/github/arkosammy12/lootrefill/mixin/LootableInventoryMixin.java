@@ -63,12 +63,19 @@ public interface LootableInventoryMixin extends Inventory {
             original.call(instance, inventory, parameters, seed);
             return;
         }
-        if (seed == 0) {
-            ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$setSavedLootTableSeed(world.getRandom().nextLong());
+        long lootTableSeed = seed;
+        if (lootTableSeed == 0) {
+            lootTableSeed = ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$getSavedLootTableSeed();
+        } else {
+            ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$setSavedLootTableSeed(lootTableSeed);
+        }
+        if (lootTableSeed == 0) {
+            lootTableSeed = world.getRandom().nextLong();
+            ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$setSavedLootTableSeed(lootTableSeed);
         }
         ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$onLootRefilled(world);
         // Call original after resetting the looted flag of the container to prevent infinite recursion due to nested calls to LootableInventory#generateLoot
-        original.call(instance, inventory, parameters, ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$getSavedLootTableSeed());
+        original.call(instance, inventory, parameters, lootTableSeed);
     }
 
 }
