@@ -132,7 +132,7 @@ public final class Utils {
                     .build();
 
             LiteralCommandNode<ServerCommandSource> setMaxRefillAmountNode = CommandManager
-                    .literal("setMaxRefillAmountNode")
+                    .literal("setMaxRefillAmount")
                     .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4))
                     .build();
 
