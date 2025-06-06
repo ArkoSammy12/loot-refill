@@ -28,9 +28,9 @@ public interface LootableContainerBlockEntityDuck {
 
     long lootrefill$getMaxRefills();
 
-    void lootrefill$setLastSavedTime(long lastSavedTime);
+    void lootrefill$setLastRefilledTime(long lastSavedTime);
 
-    long lootrefill$getLastSavedTime();
+    long lootrefill$getLastRefilledTime();
 
     void lootrefill$setLooted(boolean looted);
 

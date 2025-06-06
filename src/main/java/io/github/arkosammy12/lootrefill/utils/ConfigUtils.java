@@ -8,11 +8,9 @@ public final class ConfigUtils {
         throw new AssertionError();
     }
 
-
     public static ElementPath TIME_UNTIL_REFILLS;
     public static ElementPath MAX_REFILLS;
     public static ElementPath REFILL_ONLY_WHEN_EMPTY;
     public static ElementPath PROTECT_LOOT_CONTAINERS;
-
 
 }

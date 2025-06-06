@@ -38,7 +38,7 @@ public class LootRefill implements ModInitializer {
         builder.persistent(Codec.LONG);
         builder.initializer(() -> -1L);
     });
-    public static final AttachmentType<Long> LAST_SAVED_TIME = AttachmentRegistry.createPersistent(Identifier.of(MOD_ID, "container_last_saved_time"), Codec.LONG);
+    public static final AttachmentType<Long> LAST_REFILLED_TIME = AttachmentRegistry.createPersistent(Identifier.of(MOD_ID, "container_last_refilled_time"), Codec.LONG);
     public static final AttachmentType<Boolean> LOOTED = AttachmentRegistry.create(Identifier.of(MOD_ID, "container_looted"), (builder) -> {
         builder.persistent(Codec.BOOL);
         builder.initializer(() -> false);
@@ -46,7 +46,7 @@ public class LootRefill implements ModInitializer {
     public static final ConfigManager CONFIG_MANAGER = ConfigManagerBuilderKt.tomlConfigManager("lootrefill", FabricLoader.getInstance().getConfigDir().resolve("lootrefill.toml"), (manager) -> {
         manager.setLogger(LOGGER);
         ConfigUtils.TIME_UNTIL_REFILLS = manager.numberSetting("time_until_refill", 1_800L,(timeUntilRefill) -> {
-            timeUntilRefill.setComment("(Default = 1800) The time in seconds between each refill.");
+            timeUntilRefill.setComment("(Default = 1800) The time in seconds between each refill. Note that a refill only occurs whenever a loot container is opened.");
             timeUntilRefill.setImplementation(CommandNumberSetting::new);
             return Unit.INSTANCE;
         });
@@ -59,9 +59,7 @@ public class LootRefill implements ModInitializer {
         });
 
         ConfigUtils.REFILL_ONLY_WHEN_EMPTY = manager.booleanSetting("refill_only_when_empty", true, (refillOnlyWhenEmpty) -> {
-
-            // TODO: Clarify what happens if disabled
-            refillOnlyWhenEmpty.setComment("(Default = true) If enabled, a container's timer will count down once all items have been removed, and allow refilling once done.");
+            refillOnlyWhenEmpty.setComment("(Default = true) Prevents refilling containers when they are not fully empty.");
             refillOnlyWhenEmpty.setImplementation(CommandBooleanSetting::new);
             return Unit.INSTANCE;
         });
@@ -71,7 +69,6 @@ public class LootRefill implements ModInitializer {
             protectLootContainers.setImplementation(CommandBooleanSetting::new);
             return Unit.INSTANCE;
         });
-
         return Unit.INSTANCE;
     });
 

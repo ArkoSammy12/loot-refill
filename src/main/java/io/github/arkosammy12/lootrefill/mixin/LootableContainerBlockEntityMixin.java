@@ -61,12 +61,11 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
         if (this instanceof ViewableContainer viewableContainer && viewableContainer.lootrefill$isBeingViewed()) {
             return false;
         }
-        long lastSavedTime = lootrefill$getLastSavedTime();
+        long lastRefilledTime = lootrefill$getLastRefilledTime();
         long currentTime = world.getTime();
-        long timeDifference = currentTime - lastSavedTime;
-        long ticksUntilRefill = Utils.secondsToTicks(Long.valueOf(ConfigManagerUtils.getRawNumberSettingValue(LootRefill.CONFIG_MANAGER, ConfigUtils.TIME_UNTIL_REFILLS)));
+        long timeDifference = currentTime - lastRefilledTime;
+        long ticksUntilRefill = Utils.secondsToTicks(ConfigManagerUtils.getRawNumberSettingValue(LootRefill.CONFIG_MANAGER, ConfigUtils.TIME_UNTIL_REFILLS).longValue());
         return timeDifference >= ticksUntilRefill;
-
     }
 
     @Override
@@ -74,11 +73,11 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
 
         long oldRefillCount = this.lootrefill$getRefillCount();
 
-        long newLastSavedTime = world.getTime();
-        long newMaxRefills = Long.valueOf(ConfigManagerUtils.getRawNumberSettingValue(LootRefill.CONFIG_MANAGER, ConfigUtils.MAX_REFILLS));
+        long newLastRefilledTime = world.getTime();
+        long newMaxRefills = ConfigManagerUtils.getRawNumberSettingValue(LootRefill.CONFIG_MANAGER, ConfigUtils.MAX_REFILLS).longValue();
         long newRefillCount = oldRefillCount + 1;
 
-        this.lootrefill$setLastSavedTime(newLastSavedTime);
+        this.lootrefill$setLastRefilledTime(newLastRefilledTime);
         this.lootrefill$setMaxRefills(newMaxRefills);
         this.lootrefill$setRefillCount(newRefillCount);
         this.lootrefill$setLooted(false);
@@ -135,13 +134,13 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
     }
 
     @Override
-    public void lootrefill$setLastSavedTime(long lastSavedTime) {
-        this.setAttached(LootRefill.LAST_SAVED_TIME, lastSavedTime);
+    public void lootrefill$setLastRefilledTime(long lastSavedTime) {
+        this.setAttached(LootRefill.LAST_REFILLED_TIME, lastSavedTime);
     }
 
     @Override
-    public long lootrefill$getLastSavedTime() {
-        return this.getAttached(LootRefill.LAST_SAVED_TIME);
+    public long lootrefill$getLastRefilledTime() {
+        return this.getAttached(LootRefill.LAST_REFILLED_TIME);
     }
 
     @Override
@@ -170,6 +169,14 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
     private ItemStack onStackSplit(int slot, int amount, Operation<ItemStack> original) {
         this.lootrefill$setLooted(true);
         return original.call(slot, amount);
+    }
+
+    @WrapMethod(method = "setStack")
+    private void onStackSet(int slot, ItemStack stack, Operation<Void> original) {
+        if (stack.isEmpty()) {
+            this.lootrefill$setLooted(true);
+        }
+        original.call(slot, stack);
     }
 
 }
