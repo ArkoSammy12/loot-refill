@@ -25,12 +25,6 @@ repositories {
 	}
 
 	maven {
-		// Patbox
-		name "nucleoid"
-		url "https://maven.nucleoid.xyz"
-	}
-
-	maven {
 		name = "modrinth"
 		url = "https://api.modrinth.com/maven"
 	}
