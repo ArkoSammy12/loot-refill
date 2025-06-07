@@ -25,7 +25,7 @@ public class LootRefill implements ModInitializer {
                 timeUntilRefill.setImplementation(CommandNumberSetting::new);
                 return Unit.INSTANCE;
             });
-            ConfigUtils.MAX_REFILLS = preferences.numberSetting("max_refills", 1L, (maxRefills) -> {
+            ConfigUtils.MAX_REFILLS = preferences.numberSetting("max_refills", -1L, (maxRefills) -> {
                 maxRefills.setComment("(Default = -1) The max amount of refills allowed per container. -1 is the minimum value and enables unlimited refills. 0 disables loot refills. For a given container, this value can be overridden by setting the individual max refill amount for that container.");
                 maxRefills.setMinValue(-1L);
                 maxRefills.setImplementation(CommandNumberSetting::new);
