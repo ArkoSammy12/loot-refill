@@ -10,15 +10,17 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 public class LootableContainerCustomData {
 
     public static final Codec<LootableContainerCustomData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            RegistryKey.createCodec(RegistryKeys.LOOT_TABLE).fieldOf("saved_loot_table_id").forGetter(LootableContainerCustomData::getSavedLootTableId),
+            RegistryKey.createCodec(RegistryKeys.LOOT_TABLE).optionalFieldOf("saved_loot_table_id").forGetter(obj -> Optional.ofNullable(obj.getSavedLootTableId())),
             Codec.LONG.fieldOf("saved_loot_table_seed").forGetter(LootableContainerCustomData::getSavedLootTableSeed),
             Codec.LONG.fieldOf("global_refill_count").forGetter(LootableContainerCustomData::getGlobalRefillCount),
             Codec.LONG.fieldOf("global_max_refill_amount").forGetter(LootableContainerCustomData::getGlobalMaxRefillAmount),
@@ -26,13 +28,15 @@ public class LootableContainerCustomData {
             Codec.LONG.fieldOf("last_refilled_time").forGetter(LootableContainerCustomData::getLastRefilledTime),
             Codec.BOOL.fieldOf("looted").forGetter(LootableContainerCustomData::isLooted),
             Codec.unboundedMap(Codec.STRING.xmap(UUID::fromString, UUID::toString), Codec.LONG).fieldOf("player_refill_count").forGetter(LootableContainerCustomData::getPlayerRefillCount)
-    ).apply(instance, LootableContainerCustomData::new));
+    ).apply(instance, (optionalSavedLootTableId, savedLootTableSeed, globalRefillCount, globalMaxRefillAmount, individualRefillAmount, lastRefilledTime, looted, playerRefillCount) ->
+            new LootableContainerCustomData(optionalSavedLootTableId.orElse(null), savedLootTableSeed, globalRefillCount, globalMaxRefillAmount, individualRefillAmount, lastRefilledTime, looted, playerRefillCount)));
 
     public static final AttachmentType<LootableContainerCustomData> ATTACHMENT = AttachmentRegistry.create(Identifier.of(LootRefill.MOD_ID, "lootable_container_custom_data"), builder -> {
         builder.persistent(CODEC);
         builder.initializer(LootableContainerCustomData::new);
     });
 
+    @Nullable
     private RegistryKey<LootTable> savedLootTableId;
     private long savedLootTableSeed;
     private long globalRefillCount ;
@@ -42,7 +46,7 @@ public class LootableContainerCustomData {
     private boolean looted = false;
     private final Map<UUID, Long> playerRefillCount;
 
-    public LootableContainerCustomData(RegistryKey<LootTable> savedLootTableId, long savedLootTableSeed, long globalRefillCount, long individualRefillAmount, long globalMaxRefillAmount, long lastRefilledTime, boolean looted, Map<UUID, Long> playerRefillCount) {
+    public LootableContainerCustomData(@Nullable RegistryKey<LootTable> savedLootTableId, long savedLootTableSeed, long globalRefillCount, long individualRefillAmount, long globalMaxRefillAmount, long lastRefilledTime, boolean looted, Map<UUID, Long> playerRefillCount) {
         this.savedLootTableId = savedLootTableId;
         this.savedLootTableSeed = savedLootTableSeed;
         this.globalRefillCount = globalRefillCount;
@@ -60,10 +64,11 @@ public class LootableContainerCustomData {
         this.playerRefillCount = new HashMap<>();
     }
 
-    public void setSavedLootTableId(RegistryKey<LootTable> savedLootTableId) {
+    public void setSavedLootTableId(@Nullable RegistryKey<LootTable> savedLootTableId) {
         this.savedLootTableId = savedLootTableId;
     }
 
+    @Nullable
     public RegistryKey<LootTable> getSavedLootTableId() {
         return this.savedLootTableId;
     }
