@@ -19,10 +19,13 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(LootableContainerBlockEntity.class)
 public abstract class LootableContainerBlockEntityMixin extends LockableContainerBlockEntity implements LootableInventory, LootableContainerBlockEntityDuck {
+
+    @Shadow public abstract boolean isEmpty();
 
     protected LootableContainerBlockEntityMixin(BlockEntityType<?> blockEntityType, BlockPos blockPos, BlockState blockState) {
         super(blockEntityType, blockPos, blockState);
@@ -60,7 +63,7 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
         }
 
         boolean perPlayerRefillCounts = ConfigManagerUtils.getRawBooleanSettingValue(LootRefill.CONFIG_MANAGER, ConfigUtils.PER_PLAYER_REFILL_COUNTS);
-        if (perPlayerRefillCounts && maxRefills > 0 && this.lootrefill$getCustomData().getRefillCountForPlayer(player.getUuid()) >= maxRefills) {
+        if (perPlayerRefillCounts && maxRefills > 0 && this.lootrefill$getCustomData().getRefillCountForPlayer(player) >= maxRefills) {
             return false;
         }
         if (maxRefills > 0 && globalRefillCount >= maxRefills) {
@@ -83,16 +86,15 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
     public void lootrefill$onLootRefilled(World world, ServerPlayerEntity player) {
 
         long oldRefillCount = this.lootrefill$getCustomData().getGlobalRefillCount();
-
+        long newRefillCount = oldRefillCount + 1;
         long newLastRefilledTime = world.getTime();
         long newMaxRefills = ConfigManagerUtils.getRawNumberSettingValue(LootRefill.CONFIG_MANAGER, ConfigUtils.MAX_REFILLS).longValue();
-        long newRefillCount = oldRefillCount + 1;
 
         this.lootrefill$getCustomData().setLastRefilledTime(newLastRefilledTime);
         this.lootrefill$getCustomData().setGlobalMaxRefillAmount(newMaxRefills);
-        this.lootrefill$getCustomData().setGlobalRefillCont(newRefillCount);
+        this.lootrefill$getCustomData().setGlobalRefillCount(newRefillCount);
         this.lootrefill$getCustomData().setLooted(false);
-        this.lootrefill$getCustomData().incrementRefillCountForPlayer(player.getUuid());
+        this.lootrefill$getCustomData().incrementRefillCountForPlayer(player);
     }
 
     @Override
@@ -116,7 +118,12 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
     // Check if the container is empty. Do not use the Minecraft provided method since that calls generateLoot(), which we don't want
     @Unique
     private boolean isEmptyNoSideEffects() {
-        return this.getHeldStacks().stream().allMatch(ItemStack::isEmpty);
+        for (ItemStack stack : this.getHeldStacks()) {
+            if (!stack.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @WrapMethod(method = "removeStack(I)Lnet/minecraft/item/ItemStack;")

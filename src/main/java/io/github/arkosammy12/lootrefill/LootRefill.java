@@ -13,7 +13,6 @@ import net.fabricmc.loader.api.FabricLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class LootRefill implements ModInitializer {
 
     public static final String MOD_ID = "lootrefill";
@@ -27,13 +26,13 @@ public class LootRefill implements ModInitializer {
                 return Unit.INSTANCE;
             });
             ConfigUtils.MAX_REFILLS = preferences.numberSetting("max_refills", 1L, (maxRefills) -> {
-                maxRefills.setComment("(Default = -1) The max amount of refills allowed per container. -1 is the minimum value and enables unlimited refills. 0 disables loot refills.");
+                maxRefills.setComment("(Default = -1) The max amount of refills allowed per container. -1 is the minimum value and enables unlimited refills. 0 disables loot refills. For a given container, this value can be overridden by setting the individual max refill amount for that container.");
                 maxRefills.setMinValue(-1L);
                 maxRefills.setImplementation(CommandNumberSetting::new);
                 return Unit.INSTANCE;
             });
             ConfigUtils.PER_PLAYER_REFILL_COUNTS = preferences.booleanSetting("per_player_refill_counts", false, perPlayerRefillCounts -> {
-                perPlayerRefillCounts.setComment("(Default = false) Enables tracking the amount of times a player has refilled a container individually. A container will be allowed to be refilled when the player opening the container has a refill count lower than the max refills setting's value.");
+                perPlayerRefillCounts.setComment("(Default = false) If enabled, a container will only refill if the amount of times a player has refilled a container is lower than the max refill setting value.");
                 perPlayerRefillCounts.setImplementation(CommandBooleanSetting::new);
                 return Unit.INSTANCE;
             });
@@ -43,7 +42,7 @@ public class LootRefill implements ModInitializer {
                 return Unit.INSTANCE;
             });
             ConfigUtils.PROTECT_LOOT_CONTAINERS = preferences.booleanSetting("protect_loot_containers", false, (protectLootContainers) -> {
-                protectLootContainers.setComment("(Default = false) If enabled, loot containers will be unable to be broken by players directly. They can still be broken by indirect means such as explosions.");
+                protectLootContainers.setComment("(Default = false) If enabled, containers with a set loot table id and a refill count lower than the max refill setting value, or if the max refill amount is set to unlimited, will be unbreakable by players. They can still be broken by indirect means such as explosions.");
                 protectLootContainers.setImplementation(CommandBooleanSetting::new);
                 return Unit.INSTANCE;
             });
@@ -58,7 +57,5 @@ public class LootRefill implements ModInitializer {
         Utils.registerEvents();
         Utils.registerCommands();
     }
-
-
 
 }

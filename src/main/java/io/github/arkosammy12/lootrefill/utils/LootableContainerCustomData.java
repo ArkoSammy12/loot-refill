@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.minecraft.loot.LootTable;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 
 import java.util.HashMap;
@@ -54,8 +55,8 @@ public class LootableContainerCustomData {
     public LootableContainerCustomData() {
         this.savedLootTableSeed = 0;
         this.globalRefillCount = 0;
-        this.globalMaxRefillAmount = -1;
         this.individualRefillAmount = -1;
+        this.globalMaxRefillAmount = -1;
         this.playerRefillCount = new HashMap<>();
     }
 
@@ -75,7 +76,7 @@ public class LootableContainerCustomData {
         return this.savedLootTableSeed;
     }
 
-    public void setGlobalRefillCont(long globalRefillCont) {
+    public void setGlobalRefillCount(long globalRefillCont) {
         this.globalRefillCount = globalRefillCont;
     }
 
@@ -115,21 +116,23 @@ public class LootableContainerCustomData {
         return this.looted;
     }
 
-    public void incrementRefillCountForPlayer(UUID uuid) {
+    public void incrementRefillCountForPlayer(ServerPlayerEntity player) {
+        UUID playerUuid = player.getUuid();
         for (Map.Entry<UUID, Long> entry : this.playerRefillCount.entrySet()) {
             UUID key = entry.getKey();
-            if (key.equals(uuid)) {
+            if (key.equals(playerUuid)) {
                 entry.setValue(entry.getValue() + 1);
                 return;
             }
         }
-        this.playerRefillCount.put(uuid, 1L);
+        this.playerRefillCount.put(playerUuid, 1L);
     }
 
-    public long getRefillCountForPlayer(UUID uuid) {
+    public long getRefillCountForPlayer(ServerPlayerEntity player) {
+        UUID playerUuid = player.getUuid();
         for (Map.Entry<UUID, Long> entry : this.playerRefillCount.entrySet()) {
             UUID key = entry.getKey();
-            if (key.equals(uuid)) {
+            if (key.equals(playerUuid)) {
                 return entry.getValue();
             }
         }

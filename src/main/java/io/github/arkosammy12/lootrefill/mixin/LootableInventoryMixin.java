@@ -31,8 +31,8 @@ public interface LootableInventoryMixin extends Inventory {
             original.call(player);
             return;
         }
-        long newMaxRefills = ConfigManagerUtils.getRawNumberSettingValue(LootRefill.CONFIG_MANAGER, ConfigUtils.MAX_REFILLS).longValue();
-        ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$getCustomData().setGlobalMaxRefillAmount(newMaxRefills);
+        long newGlobalMaxRefills = ConfigManagerUtils.getRawNumberSettingValue(LootRefill.CONFIG_MANAGER, ConfigUtils.MAX_REFILLS).longValue();
+        ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$getCustomData().setGlobalMaxRefillAmount(newGlobalMaxRefills);
         original.call(player);
     }
 
@@ -82,8 +82,8 @@ public interface LootableInventoryMixin extends Inventory {
             lootTableSeed = world.getRandom().nextLong();
             ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$getCustomData().setSavedLootTableSeed(lootTableSeed);
         }
-        ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$onLootRefilled(world, serverPlayer);
         // Call original after resetting the looted flag of the container to prevent infinite recursion due to nested calls to LootableInventory#generateLoot
+        ((LootableContainerBlockEntityDuck) lootableContainerBlockEntity).lootrefill$onLootRefilled(world, serverPlayer);
         original.call(instance, inventory, parameters, lootTableSeed);
     }
 
