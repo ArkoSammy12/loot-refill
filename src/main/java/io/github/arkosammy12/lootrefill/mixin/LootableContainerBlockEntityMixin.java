@@ -84,7 +84,6 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
 
     @Override
     public void lootrefill$onLootRefilled(World world, ServerPlayerEntity player) {
-
         long oldRefillCount = this.lootrefill$getCustomData().getGlobalRefillCount();
         long newRefillCount = oldRefillCount + 1;
         long newLastRefilledTime = world.getTime();
@@ -100,7 +99,9 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
     @Override
     public boolean lootrefill$shouldBeProtected(World world) {
         long refillCount = this.lootrefill$getCustomData().getGlobalRefillCount();
-        long maxRefills = this.lootrefill$getCustomData().getGlobalMaxRefillAmount();
+        long globalMaxRefillAmount = this.lootrefill$getCustomData().getGlobalMaxRefillAmount();
+        long individualMaxRefillAmount = this.lootrefill$getCustomData().getIndividualRefillAmount();
+        long maxRefills = individualMaxRefillAmount >= 0 ? individualMaxRefillAmount : globalMaxRefillAmount;
         boolean protectLootContainers = ConfigManagerUtils.getRawBooleanSettingValue(LootRefill.CONFIG_MANAGER, ConfigUtils.PROTECT_LOOT_CONTAINERS);
         return protectLootContainers && (this.lootrefill$getCustomData().getSavedLootTableId() != null && (refillCount < maxRefills || maxRefills == -1));
     }

@@ -3,7 +3,7 @@
 	"id": "lootrefill",
 	"version": "${version}",
 	"name": "Loot Refill",
-	"description": "A Minecraft Fabric server-side mod to automatically refill the contents of naturally generated loot containers.",
+	"description": "A Fabric server-side mod to automatically refill the inventories of naturally generated loot containers.",
 	"authors": [
 		"ArkoSammy12"
 	],
