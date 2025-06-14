@@ -108,7 +108,7 @@ public abstract class LootableContainerBlockEntityMixin extends LockableContaine
 
     @Override
     public LootableContainerCustomData lootrefill$getCustomData() {
-        return this.getAttachedOrCreate(LootableContainerCustomData.ATTACHMENT);
+        return this.getAttachedOrCreate(LootRefill.CUSTOM_CONTAINER_DATA_ATTACHMENT);
     }
 
     @Override

@@ -3,8 +3,6 @@ package io.github.arkosammy12.lootrefill.utils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.arkosammy12.lootrefill.LootRefill;
-import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
-import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.minecraft.loot.LootTable;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
@@ -31,20 +29,17 @@ public class LootableContainerCustomData {
     ).apply(instance, (optionalSavedLootTableId, savedLootTableSeed, globalRefillCount, globalMaxRefillAmount, individualRefillAmount, lastRefilledTime, looted, playerRefillCount) ->
             new LootableContainerCustomData(optionalSavedLootTableId.orElse(null), savedLootTableSeed, globalRefillCount, globalMaxRefillAmount, individualRefillAmount, lastRefilledTime, looted, playerRefillCount)));
 
-    public static final AttachmentType<LootableContainerCustomData> ATTACHMENT = AttachmentRegistry.create(Identifier.of(LootRefill.MOD_ID, "lootable_container_custom_data"), builder -> {
-        builder.persistent(CODEC);
-        builder.initializer(LootableContainerCustomData::new);
-    });
+    public static final Identifier ATTACHMENT_IDENTIFIER = Identifier.of(LootRefill.MOD_ID, "lootable_container_custom_data");
 
     @Nullable
     private RegistryKey<LootTable> savedLootTableId;
-    private long savedLootTableSeed;
-    private long globalRefillCount ;
-    private long individualRefillAmount;
-    private long globalMaxRefillAmount;
-    private long lastRefilledTime;
+    private long savedLootTableSeed = 0;
+    private long globalRefillCount = 0;
+    private long individualRefillAmount = -1;
+    private long globalMaxRefillAmount = -1;
+    private long lastRefilledTime = 0;
     private boolean looted = false;
-    private final Map<UUID, Long> playerRefillCount;
+    private final Map<UUID, Long> playerRefillCount = new HashMap<>();
 
     public LootableContainerCustomData(@Nullable RegistryKey<LootTable> savedLootTableId, long savedLootTableSeed, long globalRefillCount, long individualRefillAmount, long globalMaxRefillAmount, long lastRefilledTime, boolean looted, Map<UUID, Long> playerRefillCount) {
         this.savedLootTableId = savedLootTableId;
@@ -52,16 +47,13 @@ public class LootableContainerCustomData {
         this.globalRefillCount = globalRefillCount;
         this.individualRefillAmount = individualRefillAmount;
         this.globalMaxRefillAmount = globalMaxRefillAmount;
+        this.lastRefilledTime = lastRefilledTime;
         this.looted = looted;
-        this.playerRefillCount = playerRefillCount;
+        this.playerRefillCount.putAll(playerRefillCount);
     }
 
     public LootableContainerCustomData() {
-        this.savedLootTableSeed = 0;
-        this.globalRefillCount = 0;
-        this.individualRefillAmount = -1;
-        this.globalMaxRefillAmount = -1;
-        this.playerRefillCount = new HashMap<>();
+
     }
 
     public void setSavedLootTableId(@Nullable RegistryKey<LootTable> savedLootTableId) {

@@ -1,6 +1,7 @@
 package io.github.arkosammy12.lootrefill;
 
 import io.github.arkosammy12.lootrefill.utils.ConfigUtils;
+import io.github.arkosammy12.lootrefill.utils.LootableContainerCustomData;
 import io.github.arkosammy12.lootrefill.utils.Utils;
 import io.github.arkosammy12.monkeyconfig.base.ConfigManager;
 import io.github.arkosammy12.monkeyconfig.builders.ConfigManagerBuilderKt;
@@ -9,6 +10,8 @@ import io.github.arkosammy12.monkeyutils.settings.CommandBooleanSetting;
 import io.github.arkosammy12.monkeyutils.settings.CommandNumberSetting;
 import kotlin.Unit;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.fabricmc.loader.api.FabricLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +52,11 @@ public class LootRefill implements ModInitializer {
             return Unit.INSTANCE;
         });
         return Unit.INSTANCE;
+    });
+
+    public static final AttachmentType<LootableContainerCustomData> CUSTOM_CONTAINER_DATA_ATTACHMENT = AttachmentRegistry.create(LootableContainerCustomData.ATTACHMENT_IDENTIFIER, builder -> {
+        builder.persistent(LootableContainerCustomData.CODEC);
+        builder.initializer(LootableContainerCustomData::new);
     });
 
     @Override
