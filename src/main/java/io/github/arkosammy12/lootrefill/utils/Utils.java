@@ -12,16 +12,12 @@ import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.minecraft.SharedConstants;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.LootableContainerBlockEntity;
-import net.minecraft.command.argument.BlockPosArgumentType;
-import net.minecraft.command.argument.DimensionArgumentType;
-import net.minecraft.command.argument.IdentifierArgumentType;
-import net.minecraft.command.argument.PosArgument;
+import net.minecraft.command.argument.*;
 import net.minecraft.loot.LootTable;
 import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.LootCommand;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -33,6 +29,8 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import org.apache.commons.lang3.function.Suppliers;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Optional;
 
 public final class Utils {
 
@@ -72,16 +70,16 @@ public final class Utils {
                     .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4))
                     .build();
 
-            ArgumentCommandNode<ServerCommandSource, Identifier> addLootTableArgumentNode = CommandManager
-                    .argument("lootTableId", IdentifierArgumentType.identifier())
-                    .suggests(LootCommand.SUGGESTION_PROVIDER)
+            ArgumentCommandNode<ServerCommandSource, RegistryEntry<LootTable>> addLootTableArgumentNode = CommandManager
+                    .argument("lootTable", RegistryEntryArgumentType.lootTable(registryAccess))
                     .executes(ctx -> {
-                        Identifier lootTableId = IdentifierArgumentType.getIdentifier(ctx, "lootTableId");
-                        RegistryKey<LootTable> lootTableKey = RegistryKey.of(RegistryKeys.LOOT_TABLE, lootTableId);
+                        RegistryEntry<LootTable> lootTableId = RegistryEntryArgumentType.getLootTable(ctx, "lootTable");
+                        RegistryKey<LootTable> lootTableKey = lootTableId.getKey().orElseThrow();
                         ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
 
                         MinecraftServer server = ctx.getSource().getWorld().getServer();
-                        if (!server.getReloadableRegistries().getIds(RegistryKeys.LOOT_TABLE).contains(lootTableId)){
+                        Optional<RegistryEntry.Reference<LootTable>> optionalLootTableReference = server.getReloadableRegistries().createRegistryLookup().getOptionalEntry(lootTableKey);
+                        if (optionalLootTableReference.isEmpty()) {
                             player.sendMessage(Text.literal(String.format("The loot table id %s does not exist!", lootTableId)).formatted(Formatting.RED));
                             return Command.SINGLE_SUCCESS;
                         }
@@ -110,12 +108,13 @@ public final class Utils {
                     .argument("world", DimensionArgumentType.dimension())
                     .requires(serverCommandSource -> serverCommandSource.hasPermissionLevel(4))
                     .executes(ctx -> {
-                        Identifier lootTableId = IdentifierArgumentType.getIdentifier(ctx, "loot_table_id");
-                        RegistryKey<LootTable> lootTableKey = RegistryKey.of(RegistryKeys.LOOT_TABLE, lootTableId);
+                        RegistryEntry<LootTable> lootTableId = RegistryEntryArgumentType.getLootTable(ctx, "lootTable");
+                        RegistryKey<LootTable> lootTableKey = lootTableId.getKey().orElseThrow();
                         ServerPlayerEntity player = ctx.getSource().getPlayer();
                         ServerWorld world = DimensionArgumentType.getDimensionArgument(ctx, "world");
                         MinecraftServer server = world.getServer();
-                        if (!server.getReloadableRegistries().getIds(RegistryKeys.LOOT_TABLE).contains(lootTableId)){
+                        Optional<RegistryEntry.Reference<LootTable>> optionalLootTableReference = server.getReloadableRegistries().createRegistryLookup().getOptionalEntry(lootTableKey);
+                        if (optionalLootTableReference.isEmpty()) {
                             sendMessageToPlayer(player, Text.literal(String.format("The loot table id %s does not exist!", lootTableId)).formatted(Formatting.RED));
                             return Command.SINGLE_SUCCESS;
                         }
